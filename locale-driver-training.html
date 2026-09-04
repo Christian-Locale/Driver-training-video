@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Locale — Driver Training: A Route, Start to Finish</title>
+<style>
+  :root{
+    --bg:#F4F1E8;
+    --paper:#FBFAF6;
+    --ink:#1B2E24;
+    --green-900:#1B3B2C;
+    --green-700:#2F6B4F;
+    --green-500:#4C9A72;
+    --green-300:#8FC3A3;
+    --sage:#CFE0D2;
+    --sage-2:#E3EDE2;
+    --khaki:#C9A46C;
+    --red:#C4553F;
+    --amber:#E0A33E;
+    --teal:#3E8E9C;
+    --font-display:"Futura","Avenir Next Condensed","Century Gothic","Trebuchet MS",sans-serif;
+    --font-body:"Avenir Next","Avenir","Segoe UI",sans-serif;
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:
+      radial-gradient(120% 90% at 50% 0%, #23402F 0%, #16261C 55%, #101A14 100%);
+    display:grid;place-items:center;
+    font-family:var(--font-body);
+    color:var(--ink);
+    overflow:hidden;
+  }
+
+  /* ---------- Stage: fixed 16:9, everything scales with it ---------- */
+  .stage{
+    position:relative;
+    width:min(100vw, calc(100vh * 16 / 9));
+    aspect-ratio:16/9;
+    background:var(--bg);
+    overflow:hidden;
+    container-type:size;
+    box-shadow:0 40px 90px rgba(0,0,0,.45);
+    cursor:default;
+  }
+  .canvas{position:absolute;inset:0;width:100%;height:100%;display:block;font-family:var(--font-display)}
+  .canvas text{font-family:var(--font-display)}
+
+  .scene{opacity:0;visibility:hidden;transition:opacity .5s ease}
+  .scene.is-active{opacity:1;visibility:visible}
+
+  /* ---------- Caption bar ---------- */
+  .capbar{
+    position:absolute;left:0;right:0;bottom:0;
+    min-height:15cqh;
+    background:linear-gradient(180deg,#22503A 0%,#1B3B2C 100%);
+    display:flex;align-items:center;gap:2.4cqw;
+    padding:1.6cqh 5cqw;
+    transition:transform .45s cubic-bezier(.2,.8,.2,1),opacity .35s ease;
+  }
+  .capbar.is-hidden{transform:translateY(101%);opacity:0}
+  .step{
+    flex:0 0 auto;
+    font-family:var(--font-display);
+    font-size:1.05cqw;letter-spacing:.22em;font-weight:700;
+    color:var(--green-300);
+    border:1.5px solid rgba(143,195,163,.42);
+    border-radius:100px;
+    padding:.75cqh 1.3cqw;
+    white-space:nowrap;
+  }
+  .caption{
+    font-size:2.05cqw;line-height:1.4;font-weight:600;
+    color:#F4F1E8;letter-spacing:.002em;
+  }
+  .caption b{color:#A8D8BC;font-weight:700}
+
+  /* ---------- Progress dots ---------- */
+  .dots{
+    position:absolute;left:0;right:0;bottom:17.2cqh;
+    display:flex;justify-content:center;gap:1.1cqw;
+  }
+  .dot{
+    width:.72cqw;height:.72cqw;border-radius:50%;
+    background:rgba(27,59,44,.2);
+    border:0;padding:0;cursor:pointer;
+    transition:transform .3s cubic-bezier(.2,1.5,.3,1),background .3s ease;
+  }
+  .dot:hover{background:rgba(27,59,44,.42)}
+  .dot.is-done{background:rgba(47,107,79,.5)}
+  .dot.is-on{background:var(--green-700);transform:scale(1.75)}
+
+  /* ---------- Controls (auto-hide during playback) ---------- */
+  .controls{
+    position:absolute;top:3cqh;right:2.4cqw;
+    display:flex;gap:.8cqw;
+    opacity:1;transition:opacity .4s ease;
+  }
+  .stage.is-idle .controls{opacity:0}
+  .btn{
+    font-family:var(--font-display);
+    font-size:1.02cqw;letter-spacing:.14em;font-weight:700;
+    color:var(--green-900);
+    background:rgba(251,250,246,.9);
+    border:1.5px solid rgba(27,59,44,.16);
+    border-radius:100px;
+    padding:1cqh 1.5cqw;
+    cursor:pointer;
+    display:flex;align-items:center;gap:.5cqw;
+    transition:background .25s ease,transform .25s ease;
+  }
+  .btn:hover{background:#fff;transform:translateY(-1px)}
+  .btn svg{width:1.15cqw;height:1.15cqw;display:block}
+
+  /* ---------- Start gate: browsers won't autoplay sound without a click ---------- */
+  .gate{
+    position:absolute;inset:0;
+    background:linear-gradient(180deg,#22503A 0%,#16261C 100%);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3cqh;
+    cursor:pointer;z-index:5;
+    transition:opacity .5s ease,visibility .5s ease;
+  }
+  .gate.is-gone{opacity:0;visibility:hidden}
+  .gate-mark{
+    width:9cqw;height:9cqw;border-radius:2.2cqw;
+    background:#F4F1E8;color:#1B3B2C;
+    font-family:var(--font-display);font-size:5.6cqw;font-weight:800;
+    display:grid;place-items:center;
+  }
+  .gate-title{
+    font-family:var(--font-display);
+    font-size:2.9cqw;font-weight:800;color:#F4F1E8;margin:0;text-align:center;
+  }
+  .gate-sub{font-size:1.35cqw;font-weight:600;color:#8FC3A3;margin:0;letter-spacing:.16em}
+  .gate-play{
+    display:flex;align-items:center;gap:1cqw;
+    font-family:var(--font-display);font-size:1.35cqw;font-weight:800;letter-spacing:.18em;
+    color:#1B3B2C;background:#8FC3A3;border:0;border-radius:100px;
+    padding:1.7cqh 2.6cqw;cursor:pointer;
+    transition:transform .25s ease,background .25s ease;
+  }
+  .gate-play:hover{background:#A8D8BC;transform:translateY(-2px)}
+  .gate-play svg{width:1.5cqw;height:1.5cqw;display:block}
+
+  /* =================================================================
+     ANIMATION UTILITIES  — all scoped to .is-active so they replay
+     every time a scene is entered, and never run while off-screen.
+     ================================================================= */
+  .scene.is-active .fade{animation:fade .65s ease var(--d,0s) both}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+
+  .scene.is-active .rise{animation:rise .8s cubic-bezier(.2,.85,.2,1) var(--d,0s) both}
+  @keyframes rise{from{opacity:0;transform:translateY(38px)}to{opacity:1;transform:none}}
+
+  .scene.is-active .pop{animation:pop .6s cubic-bezier(.2,1.5,.35,1) var(--d,0s) both}
+  @keyframes pop{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:scale(1)}}
+
+  .scene.is-active .inL{animation:inL 1s cubic-bezier(.2,.85,.2,1) var(--d,0s) both}
+  @keyframes inL{from{opacity:0;transform:translateX(-110px)}to{opacity:1;transform:none}}
+
+  .scene.is-active .inR{animation:inR 1s cubic-bezier(.2,.85,.2,1) var(--d,0s) both}
+  @keyframes inR{from{opacity:0;transform:translateX(110px)}to{opacity:1;transform:none}}
+
+  .pop,.wheel,.pulse,.wobble,.tie-l,.tie-r,.jar-fly{transform-box:fill-box;transform-origin:center}
+
+  /* phase beats inside a multi-part scene */
+  .scene.is-active .ph{
+    animation:phIn .5s ease var(--in,0s) both,
+              phOut .5s ease var(--out,9999s) forwards;
+  }
+  @keyframes phIn{from{opacity:0}to{opacity:1}}
+  @keyframes phOut{from{opacity:1}to{opacity:0}}
+
+  /* walking, doors, wheels, misc */
+  .scene.is-active .walk{animation:walk 1.9s cubic-bezier(.25,.7,.3,1) var(--d,.2s) both}
+  @keyframes walk{from{transform:translateX(-460px)}to{transform:translateX(0)}}
+
+  .scene.is-active .bob{animation:bob .52s ease-in-out var(--d,.2s) 4}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+
+  .scene.is-active .door{animation:door 1.4s cubic-bezier(.4,.05,.2,1) .55s both}
+  @keyframes door{from{transform:translateY(0)}to{transform:translateY(-396px)}}
+
+  .scene.is-active .rackroll{animation:rackroll 1.9s cubic-bezier(.2,.8,.25,1) .25s both}
+  @keyframes rackroll{from{transform:translateX(790px)}to{transform:translateX(0)}}
+
+  .scene.is-active .wheel{animation:spin 1.1s linear var(--d,0s) infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .scene.is-active .drive{animation:drive 2.5s cubic-bezier(.15,.75,.25,1) .3s both}
+  @keyframes drive{from{transform:translateX(-620px)}to{transform:translateX(0)}}
+
+  .scene.is-active .dashmove{animation:dashmove .55s linear infinite}
+  @keyframes dashmove{to{transform:translateX(-170px)}}
+
+  .scene.is-active .pulse{animation:pulse 1.7s ease-in-out var(--d,0s) infinite}
+  @keyframes pulse{0%,100%{opacity:.3;transform:scale(1)}50%{opacity:1;transform:scale(1.045)}}
+
+  .scene.is-active .wobble{animation:wobble 1.5s ease-in-out var(--d,0s) infinite}
+  @keyframes wobble{
+    0%,100%{transform:translateX(0) rotate(0deg)}
+    30%{transform:translateX(11px) rotate(2.6deg)}
+    65%{transform:translateX(-8px) rotate(-2deg)}
+  }
+
+  .scene.is-active .scan{animation:scan 3s cubic-bezier(.4,0,.5,1) var(--d,0s) both}
+  @keyframes scan{
+    0%{transform:translateX(0);opacity:0}
+    12%{opacity:1}
+    38%{transform:translateX(324px)}
+    64%{transform:translateX(162px)}
+    88%,100%{transform:translateX(0);opacity:0}
+  }
+
+  .scene.is-active .flash{animation:flash .85s ease-out var(--d,0s) both}
+  @keyframes flash{0%{opacity:0}14%{opacity:.92}100%{opacity:0}}
+
+  .scene.is-active .snip{animation:snip 1.5s cubic-bezier(.3,.8,.3,1) var(--d,0s) both}
+  @keyframes snip{
+    from{transform:translate(150px,-96px);opacity:0}
+    35%{transform:translate(0,0);opacity:1}
+    70%{transform:translate(0,0);opacity:1}
+    to{transform:translate(52px,-58px);opacity:0}
+  }
+  .scene.is-active .tie-l{animation:tieL .7s cubic-bezier(.3,1.2,.4,1) var(--d,0s) both}
+  @keyframes tieL{0%,45%{transform:none;opacity:1}to{transform:translate(-46px,26px) rotate(-32deg);opacity:0}}
+  .scene.is-active .tie-r{animation:tieR .7s cubic-bezier(.3,1.2,.4,1) var(--d,0s) both}
+  @keyframes tieR{0%,45%{transform:none;opacity:1}to{transform:translate(46px,26px) rotate(32deg);opacity:0}}
+
+  .scene.is-active .jar-fly{animation:jarFly 1.15s cubic-bezier(.4,-.3,.4,1) var(--d,0s) both}
+  @keyframes jarFly{
+    0%{transform:translate(0,0) rotate(0deg);opacity:1}
+    100%{transform:translate(var(--fx,300px),var(--fy,-120px)) rotate(28deg);opacity:0}
+  }
+
+  .scene.is-active .handoff{animation:handoff 1.5s cubic-bezier(.3,.8,.3,1) var(--d,0s) both}
+  @keyframes handoff{from{transform:translateX(0)}to{transform:translateX(126px)}}
+
+  .stage.is-paused .scene *{animation-play-state:paused!important}
+
+  @media (prefers-reduced-motion:reduce){
+    .scene.is-active *{animation-duration:.01ms!important;animation-iteration-count:1!important}
+  }
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+  <svg class="canvas" viewBox="0 0 1600 900" role="img" aria-label="Locale driver training animation">
+
+    <!-- ================= REUSABLE DEFINITIONS ================= -->
+    <defs>
+      <pattern id="grid" width="28" height="28" patternUnits="userSpaceOnUse">
+        <circle cx="2.5" cy="2.5" r="1.7" fill="#DCE6D8"/>
+      </pattern>
+      <pattern id="gridDark" width="30" height="30" patternUnits="userSpaceOnUse">
+        <circle cx="3" cy="3" r="1.8" fill="rgba(143,195,163,.13)"/>
+      </pattern>
+      <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+        <feDropShadow dx="0" dy="10" stdDeviation="15" flood-color="#1B3B2C" flood-opacity=".15"/>
+      </filter>
+      <filter id="softsm" x="-30%" y="-30%" width="160%" height="160%">
+        <feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#1B3B2C" flood-opacity=".16"/>
+      </filter>
+
+      <!-- ---------- BRIAN: base body (origin at feet, grows upward) ---------- -->
+      <g id="brian-base">
+        <ellipse cx="0" cy="4" rx="46" ry="8" fill="#1B3B2C" opacity=".1"/>
+        <!-- cargo joggers -->
+        <rect x="-34" y="-154" width="68" height="62" rx="11" fill="#C9A46C"/>
+        <rect x="-31" y="-106" width="27" height="94" rx="10" fill="#C9A46C"/>
+        <rect x="4" y="-106" width="27" height="94" rx="10" fill="#C9A46C"/>
+        <path d="M-31,-106 h27 v10 h-27 z" fill="#BC9760" opacity=".55"/>
+        <path d="M4,-106 h27 v10 h-27 z" fill="#BC9760" opacity=".55"/>
+        <!-- thigh cargo pocket + label patch -->
+        <rect x="6" y="-132" width="23" height="27" rx="4" fill="#BE9760"/>
+        <rect x="10" y="-128" width="15" height="6" rx="2" fill="#A8854F"/>
+        <rect x="-30" y="-129" width="8" height="20" rx="3" fill="#BE9760" opacity=".8"/>
+        <!-- jogger cuffs -->
+        <rect x="-31" y="-26" width="27" height="12" rx="5" fill="#B8925A"/>
+        <rect x="4" y="-26" width="27" height="12" rx="5" fill="#B8925A"/>
+        <!-- sneakers -->
+        <path d="M-32,-16 h28 v10 q0,6 -6,6 h-22 q-5,0 -5,-5 z" fill="#2A2A2A"/>
+        <path d="M4,-16 h28 v11 q0,5 -5,5 h-23 q-6,0 -6,-6 z" fill="#2A2A2A"/>
+        <rect x="-33" y="-5" width="29" height="5" rx="2.5" fill="#EFEDE6"/>
+        <rect x="4" y="-5" width="29" height="5" rx="2.5" fill="#EFEDE6"/>
+        <rect x="-27" y="-12" width="9" height="2.4" rx="1.2" fill="#F4F1E8" opacity=".85"/>
+        <rect x="12" y="-12" width="9" height="2.4" rx="1.2" fill="#F4F1E8" opacity=".85"/>
+        <!-- oversized tee -->
+        <rect x="-45" y="-242" width="90" height="94" rx="13" fill="#F2F0EA"/>
+        <rect x="-59" y="-238" width="19" height="46" rx="9.5" fill="#F2F0EA"/>
+        <rect x="40" y="-238" width="19" height="46" rx="9.5" fill="#F2F0EA"/>
+        <path d="M-45,-160 h90 v12 q0,4 -6,4 h-78 q-6,0 -6,-4 z" fill="#E6E3DA"/>
+        <!-- grayscale photo graphic + small cross -->
+        <rect x="-18" y="-226" width="36" height="50" rx="2" fill="#4F4F4F"/>
+        <rect x="-14" y="-214" width="28" height="27" fill="#727272"/>
+        <rect x="-9" y="-200" width="18" height="13" fill="#565656"/>
+        <rect x="-1" y="-223" width="2" height="11" fill="#D8D8D8"/>
+        <rect x="-4.5" y="-219" width="9" height="2" fill="#D8D8D8"/>
+        <rect x="-14" y="-184" width="28" height="4" fill="#8C8C8C"/>
+        <!-- neck + head -->
+        <rect x="-10" y="-254" width="20" height="17" rx="4" fill="#D9A17C"/>
+        <rect x="-25" y="-302" width="50" height="58" rx="21" fill="#E9BC94"/>
+        <!-- beard -->
+        <path d="M-25,-272 q0,28 25,28 q25,0 25,-28 q-8,9 -25,9 q-17,0 -25,-9 z" fill="#BE9152"/>
+        <rect x="-8" y="-274" width="16" height="4" rx="2" fill="#B0853F"/>
+        <!-- hair + top knot -->
+        <path d="M-25,-284 q3,-19 25,-19 q22,0 25,19 q-10,-9 -25,-9 q-15,0 -25,9 z" fill="#C79A5B"/>
+        <path d="M-25,-284 q-2,10 0,16 q-4,-8 0,-16 z" fill="#B98C4E"/>
+        <circle cx="0" cy="-309" r="11.5" fill="#C79A5B"/>
+        <circle cx="-3" cy="-311" r="4" fill="#B98C4E" opacity=".6"/>
+        <!-- friendly eyes -->
+        <circle cx="-9" cy="-278" r="2.7" fill="#3A2E22"/>
+        <circle cx="9" cy="-278" r="2.7" fill="#3A2E22"/>
+      </g>
+
+      <!-- Brian poses: base + arm variants -->
+      <g id="brian-idle">
+        <use href="#brian-base"/>
+        <rect x="-57" y="-198" width="15.5" height="50" rx="7.75" fill="#E9BC94"/>
+        <rect x="41.5" y="-198" width="15.5" height="50" rx="7.75" fill="#E9BC94"/>
+      </g>
+
+      <g id="brian-phone">
+        <use href="#brian-base"/>
+        <rect x="-57" y="-198" width="15.5" height="50" rx="7.75" fill="#E9BC94"/>
+        <rect x="30" y="-202" width="15.5" height="46" rx="7.75" fill="#E9BC94"
+              transform="rotate(-44 37.75 -179)"/>
+        <g filter="url(#softsm)">
+          <rect x="4" y="-218" width="28" height="45" rx="5" fill="#2E3B34"/>
+          <rect x="7" y="-214" width="22" height="37" rx="3" fill="#8FC3A3"/>
+        </g>
+      </g>
+
+      <g id="brian-point">
+        <use href="#brian-base"/>
+        <rect x="-57" y="-198" width="15.5" height="50" rx="7.75" fill="#E9BC94"/>
+        <rect x="41.5" y="-210" width="50" height="15.5" rx="7.75" fill="#E9BC94"/>
+      </g>
+
+      <g id="brian-carry">
+        <use href="#brian-base"/>
+        <rect x="-58" y="-200" width="15.5" height="44" rx="7.75" fill="#E9BC94"
+              transform="rotate(30 -50.25 -192)"/>
+        <rect x="42" y="-200" width="15.5" height="44" rx="7.75" fill="#E9BC94"
+              transform="rotate(-30 49.75 -192)"/>
+      </g>
+
+      <!-- ---------- Dispatcher ---------- -->
+      <g id="dispatch">
+        <ellipse cx="0" cy="4" rx="42" ry="7.5" fill="#1B3B2C" opacity=".1"/>
+        <rect x="-30" y="-148" width="60" height="58" rx="10" fill="#2E3B34"/>
+        <rect x="-28" y="-102" width="25" height="90" rx="9" fill="#2E3B34"/>
+        <rect x="3" y="-102" width="25" height="90" rx="9" fill="#2E3B34"/>
+        <path d="M-30,-14 h27 v9 q0,5 -6,5 h-21 q-4,0 -4,-4 z" fill="#232323"/>
+        <path d="M3,-14 h27 v9 q0,5 -5,5 h-22 q-5,0 -5,-5 z" fill="#232323"/>
+        <rect x="-41" y="-232" width="82" height="88" rx="12" fill="#2F6B4F"/>
+        <rect x="-54" y="-228" width="17" height="42" rx="8.5" fill="#2F6B4F"/>
+        <rect x="38" y="-228" width="17" height="42" rx="8.5" fill="#2F6B4F"/>
+        <path d="M-11,-232 h22 v13 q-11,7 -22,0 z" fill="#285B44"/>
+        <rect x="-52" y="-192" width="14.5" height="46" rx="7.25" fill="#B4805A"/>
+        <rect x="37.5" y="-192" width="14.5" height="46" rx="7.25" fill="#B4805A"/>
+        <rect x="-9" y="-244" width="18" height="16" rx="4" fill="#A57250"/>
+        <rect x="-24" y="-290" width="48" height="54" rx="20" fill="#C68E63"/>
+        <path d="M-24,-268 q0,-24 24,-24 q24,0 24,24 q-24,-9 -48,0 z" fill="#1B3B2C"/>
+        <path d="M-24,-268 h52 q4,0 4,4 h-56 z" fill="#153024"/>
+        <circle cx="-8.5" cy="-262" r="2.6" fill="#3A2E22"/>
+        <circle cx="8.5" cy="-262" r="2.6" fill="#3A2E22"/>
+      </g>
+
+      <!-- ---------- Customer ---------- -->
+      <g id="customer">
+        <ellipse cx="0" cy="4" rx="38" ry="7" fill="#1B3B2C" opacity=".1"/>
+        <rect x="-27" y="-140" width="54" height="54" rx="9" fill="#5D6B75"/>
+        <rect x="-25" y="-96" width="22" height="84" rx="8" fill="#5D6B75"/>
+        <rect x="3" y="-96" width="22" height="84" rx="8" fill="#5D6B75"/>
+        <path d="M-27,-14 h24 v9 q0,5 -5,5 h-19 q-4,0 -4,-4 z" fill="#3B3B3B"/>
+        <path d="M3,-14 h24 v9 q0,5 -5,5 h-19 q-4,0 -4,-4 z" fill="#3B3B3B"/>
+        <rect x="-36" y="-222" width="72" height="84" rx="11" fill="#9B7A8C"/>
+        <rect x="-48" y="-218" width="15" height="40" rx="7.5" fill="#9B7A8C"/>
+        <rect x="34" y="-218" width="15" height="40" rx="7.5" fill="#9B7A8C"/>
+        <rect x="-50" y="-190" width="14" height="42" rx="7" fill="#E0B79A"
+              transform="rotate(26 -43 -169)"/>
+        <rect x="36" y="-190" width="14" height="42" rx="7" fill="#E0B79A"
+              transform="rotate(-26 43 -169)"/>
+        <rect x="-8" y="-234" width="16" height="15" rx="4" fill="#CFA487"/>
+        <rect x="-23" y="-280" width="46" height="52" rx="19" fill="#E0B79A"/>
+        <path d="M-25,-256 q-2,-30 25,-30 q27,0 25,30 q0,-14 -25,-14 q-25,0 -25,14 z" fill="#4A3B33"/>
+        <circle cx="-8" cy="-254" r="2.5" fill="#3A2E22"/>
+        <circle cx="8" cy="-254" r="2.5" fill="#3A2E22"/>
+      </g>
+
+      <!-- ---------- Insulated bag (74 x 86, origin top-left) ---------- -->
+      <g id="bag">
+        <rect x="0" y="0" width="74" height="86" rx="9" fill="#7FA98C"/>
+        <rect x="0" y="0" width="74" height="23" rx="9" fill="#5F8E73"/>
+        <path d="M27,-9 h20 a7,7 0 0 1 0,14 h-20 a7,7 0 0 1 0,-14 z" fill="none" stroke="#4C7A60" stroke-width="5"/>
+        <rect x="9" y="33" width="56" height="36" rx="4" fill="#FBFAF6"/>
+        <rect x="14" y="40" width="22" height="5" rx="2.5" fill="#BCCCC0"/>
+        <rect x="14" y="50" width="32" height="5" rx="2.5" fill="#BCCCC0"/>
+        <rect x="14" y="59" width="18" height="4" rx="2" fill="#D3DED6"/>
+        <rect x="45" y="38" width="16" height="9" rx="3" fill="#3E8E9C"/>
+        <rect x="0" y="76" width="74" height="10" rx="5" fill="#6E997C"/>
+      </g>
+
+      <!-- ---------- Empty jar ---------- -->
+      <g id="jar">
+        <rect x="0" y="6" width="26" height="34" rx="6" fill="#DCE9DE" opacity=".92"/>
+        <rect x="3" y="0" width="20" height="9" rx="3" fill="#2F6B4F"/>
+        <rect x="5" y="14" width="5" height="18" rx="2.5" fill="#FBFAF6" opacity=".75"/>
+      </g>
+
+      <!-- ---------- Car, side view (origin at road level) ---------- -->
+      <g id="car">
+        <path d="M4,0 v-44 q0,-11 11,-13 l44,-7 q19,-34 55,-34 h78 q36,0 52,34 l53,9 q15,3 15,15 v40 q0,6 -7,6 z" fill="#3F7D5C"/>
+        <path d="M62,-62 q13,-23 34,-23 h32 v28 h-66 z" fill="#CFE0D2"/>
+        <path d="M140,-85 h26 q23,0 33,23 l4,5 h-63 z" fill="#CFE0D2"/>
+        <rect x="128" y="-86" width="7" height="30" rx="3" fill="#2F6B4F"/>
+        <rect x="232" y="-30" width="26" height="11" rx="5" fill="#E8DEBF"/>
+        <rect x="6" y="-34" width="16" height="11" rx="5" fill="#C4553F"/>
+        <path d="M4,-14 h300 v8 q0,6 -7,6 h-293 z" fill="#35684D"/>
+        <g transform="translate(76,-4)"><g class="wheel">
+          <circle r="25" fill="#2A2A2A"/><circle r="10" fill="#CFE0D2"/>
+          <rect x="-2.4" y="-21" width="4.8" height="42" rx="2" fill="#9DB8A6"/>
+          <rect x="-21" y="-2.4" width="42" height="4.8" rx="2" fill="#9DB8A6"/>
+        </g></g>
+        <g transform="translate(232,-4)"><g class="wheel" style="--d:.05s">
+          <circle r="25" fill="#2A2A2A"/><circle r="10" fill="#CFE0D2"/>
+          <rect x="-2.4" y="-21" width="4.8" height="42" rx="2" fill="#9DB8A6"/>
+          <rect x="-21" y="-2.4" width="42" height="4.8" rx="2" fill="#9DB8A6"/>
+        </g></g>
+      </g>
+
+      <!-- ---------- Cargo bay opening (rear of car) ---------- -->
+      <g id="cargobay">
+        <rect x="0" y="0" width="470" height="230" rx="18" fill="#E7EEE6" stroke="#B4C6B9" stroke-width="4"/>
+        <rect x="0" y="196" width="470" height="34" rx="10" fill="#D3E0D5"/>
+        <rect x="18" y="16" width="434" height="12" rx="6" fill="#D3E0D5"/>
+      </g>
+    </defs>
+
+    <!-- ======================= SCENE 1 ======================= -->
+    <g class="scene" id="s1">
+      <rect width="1600" height="900" fill="#F4F1E8"/>
+      <rect width="1600" height="900" fill="url(#grid)" opacity=".55"/>
+      <circle cx="470" cy="420" r="272" fill="#EAF1E7"/>
+      <rect y="690" width="1600" height="210" fill="#E3EDE2"/>
+      <rect y="690" width="1600" height="4" fill="#CFE0D2"/>
+
+      <g class="fade" style="--d:.1s">
+        <g transform="translate(470,690)"><use href="#brian-phone" transform="scale(1.12)"/></g>
+      </g>
+      <g transform="translate(478,455)">
+        <circle class="pulse" r="46" fill="none" stroke="#8FC3A3" stroke-width="4" style="--d:.9s"/>
+      </g>
+
+      <!-- incoming assignment from the DSP -->
+      <g class="inR" style="--d:.45s">
+        <g filter="url(#soft)">
+          <rect x="880" y="232" width="530" height="286" rx="24" fill="#FBFAF6"/>
+        </g>
+        <circle cx="934" cy="286" r="26" fill="#2F6B4F"/>
+        <text x="934" y="295" font-size="24" font-weight="800" fill="#FBFAF6" text-anchor="middle">D</text>
+        <text x="976" y="279" font-size="20" font-weight="800" fill="#1B3B2C" letter-spacing="1.4">YOUR DSP</text>
+        <text x="976" y="302" font-size="16" font-weight="600" fill="#7C8C81">Delivery Service Partner</text>
+        <line x1="912" y1="330" x2="1378" y2="330" stroke="#E3EDE2" stroke-width="2"/>
+        <text x="912" y="368" font-size="19" font-weight="600" fill="#42544A">You're assigned for tomorrow —</text>
+      </g>
+      <g class="pop" style="--d:1.25s">
+        <rect x="912" y="392" width="266" height="82" rx="16" fill="#E3EDE2"/>
+        <text x="936" y="426" font-size="15" font-weight="800" fill="#7C8C81" letter-spacing="2.4">ROUTE</text>
+        <text x="936" y="462" font-size="42" font-weight="800" fill="#1B3B2C">27</text>
+        <rect x="1064" y="410" width="94" height="46" rx="10" fill="#4C9A72"/>
+        <text x="1111" y="440" font-size="17" font-weight="800" fill="#FBFAF6" text-anchor="middle" letter-spacing="1">NEW</text>
+      </g>
+      <g class="fade" style="--d:2.1s">
+        <text x="880" y="570" font-size="20" font-weight="700" fill="#2F6B4F" letter-spacing=".6">
+          Write it down — dispatch will ask for it.
+        </text>
+      </g>
+    </g>
+
+    <!-- ======================= SCENE 2 ======================= -->
+    <g class="scene" id="s2">
+      <rect width="1600" height="900" fill="#F4F1E8"/>
+      <rect width="1600" height="900" fill="url(#grid)" opacity=".5"/>
+      <rect y="690" width="1600" height="210" fill="#E3EDE2"/>
+      <rect y="690" width="1600" height="4" fill="#CFE0D2"/>
+
+      <!-- warehouse -->
+      <g class="fade">
+        <rect x="620" y="196" width="940" height="494" rx="10" fill="#E9EFE6"/>
+        <rect x="620" y="196" width="940" height="52" rx="8" fill="#1B3B2C"/>
+        <rect x="656" y="286" width="112" height="86" rx="8" fill="#D3E0D5"/>
+        <rect x="1400" y="286" width="112" height="86" rx="8" fill="#D3E0D5"/>
+        <rect x="1180" y="152" width="256" height="52" rx="12" fill="#2F6B4F"/>
+        <text x="1308" y="188" font-size="26" font-weight="800" fill="#FBFAF6" text-anchor="middle" letter-spacing="5">LOCALE</text>
+        <!-- doorway interior -->
+        <rect x="800" y="294" width="500" height="396" fill="#2A3B31"/>
+        <rect x="820" y="560" width="140" height="130" rx="6" fill="#35493C"/>
+        <rect x="1140" y="530" width="140" height="160" rx="6" fill="#35493C"/>
+      </g>
+      <!-- roll-up door -->
+      <g clip-path="url(#doorClipRect)">
+        <g class="door">
+          <rect x="800" y="294" width="500" height="396" fill="#B9C7BC"/>
+          <g fill="#A9B9AC">
+            <rect x="800" y="316" width="500" height="8"/>
+            <rect x="800" y="360" width="500" height="8"/>
+            <rect x="800" y="404" width="500" height="8"/>
+            <rect x="800" y="448" width="500" height="8"/>
+            <rect x="800" y="492" width="500" height="8"/>
+            <rect x="800" y="536" width="500" height="8"/>
+            <rect x="800" y="580" width="500" height="8"/>
+            <rect x="800" y="624" width="500" height="8"/>
+            <rect x="800" y="668" width="500" height="8"/>
+          </g>
+        </g>
+      </g>
+      <clipPath id="doorClipRect"><rect x="800" y="294" width="500" height="396"/></clipPath>
+      <rect x="792" y="286" width="516" height="14" rx="7" fill="#2F6B4F"/>
+
+      <!-- dispatcher waiting inside -->
+      <g class="fade" style="--d:1.5s">
+        <g transform="translate(1108,690)"><use href="#dispatch" transform="scale(1.02)"/></g>
+        <g transform="translate(1148,520)">
+          <rect width="46" height="58" rx="5" fill="#F2F0EA"/>
+          <rect x="14" y="-5" width="18" height="10" rx="3" fill="#8FA593"/>
+          <rect x="8" y="14" width="30" height="4" rx="2" fill="#BCCCC0"/>
+          <rect x="8" y="26" width="24" height="4" rx="2" fill="#BCCCC0"/>
+        </g>
+      </g>
+
+      <!-- Brian walks up and shows his code -->
+      <g class="walk" style="--d:1.1s">
+        <g class="bob" style="--d:1.1s">
+          <g transform="translate(690,690)"><use href="#brian-phone" transform="scale(1.06)"/></g>
+        </g>
+      </g>
+      <g class="pop" style="--d:2.9s">
+        <g filter="url(#softsm)"><rect x="396" y="420" width="196" height="176" rx="18" fill="#FBFAF6"/></g>
+        <text x="494" y="458" font-size="15" font-weight="800" fill="#7C8C81" text-anchor="middle" letter-spacing="2">CHECK-IN CODE</text>
+        <g fill="#1B3B2C">
+          <rect x="430" y="472" width="34" height="34" rx="4"/><rect x="524" y="472" width="34" height="34" rx="4"/>
+          <rect x="430" y="530" width="34" height="34" rx="4"/><rect x="478" y="498" width="22" height="22" rx="3"/>
+          <rect x="512" y="530" width="16" height="16" rx="2"/><rect x="536" y="548" width="16" height="16" rx="2"/>
+          <rect x="478" y="540" width="14" height="14" rx="2"/>
+        </g>
+      </g>
+      <g class="pop" style="--d:3.5s">
+        <g filter="url(#softsm)"><rect x="372" y="272" width="250" height="82" rx="18" fill="#2F6B4F"/></g>
+        <path d="M584,354 l30,26 l-6,-26 z" fill="#2F6B4F"/>
+        <text x="497" y="322" font-size="25" font-weight="800" fill="#FBFAF6" text-anchor="middle">"Route 27."</text>
+      </g>
+    </g>
+
+    <!-- ======================= SCENE 3 ======================= -->
+    <g class="scene" id="s3">
+      <rect width="1600" height="900" fill="#EFF3EC"/>
+      <rect width="1600" height="900" fill="url(#grid)" opacity=".45"/>
+      <g opacity=".5" fill="#DFE8DC">
+        <rect x="60" y="250" width="180" height="440" rx="8"/>
+        <rect x="270" y="300" width="150" height="390" rx="8"/>
+        <rect x="1420" y="270" width="150" height="420" rx="8"/>
+      </g>
+      <rect y="690" width="1600" height="210" fill="#E3EDE2"/>
+      <rect y="690" width="1600" height="4" fill="#CFE0D2"/>
+
+      <g class="rackroll">
+        <g transform="translate(470,690)"><use href="#dispatch" transform="scale(1.04)"/></g>
+        <g transform="translate(560,190)" class="rack-slot" data-checks="0"></g>
+        <g stroke="#9DB8A6" stroke-width="5" stroke-linecap="round" opacity=".75">
+          <line x1="248" y1="356" x2="300" y2="356"/>
+          <line x1="222" y1="418" x2="292" y2="418"/>
+          <line x1="248" y1="480" x2="300" y2="480"/>
+        </g>
+      </g>
+
+      <g class="fade" style="--d:2.1s">
+        <g stroke="#2F6B4F" stroke-width="4" fill="none" stroke-linecap="round">
+          <path d="M1030,232 h26 v456 h-26"/>
+        </g>
+        <text x="1076" y="440" font-size="23" font-weight="800" fill="#1B3B2C" letter-spacing="1">4 SHELVES</text>
+        <text x="1076" y="472" font-size="18" font-weight="600" fill="#7C8C81">top to bottom</text>
+      </g>
+      <g class="pop" style="--d:2.5s">
+        <rect x="556" y="128" width="330" height="62" rx="16" fill="#2F6B4F"/>
+        <text x="721" y="168" font-size="24" font-weight="800" fill="#FBFAF6" text-anchor="middle" letter-spacing=".8">
+          ~20 INSULATED BAGS
+        </text>
+      </g>
+    </g>
+
+    <!-- ======================= SCENE 4 ======================= -->
+    <g class="scene" id="s4">
+      <rect width="1600" height="900" fill="#EFF3EC"/>
+      <rect width="1600" height="900" fill="url(#grid)" opacity=".45"/>
+      <rect y="690" width="1600" height="210" fill="#E3EDE2"/>
+      <rect y="690" width="1600" height="4" fill="#CFE0D2"/>
+
+      <g class="fade">
+        <g transform="translate(300,690)"><use href="#brian-point" transform="scale(1.04)"/></g>
+      </g>
+      <g class="fade" style="--d:.15s">
+        <g transform="translate(600,190)" class="rack-slot" data-checks="1"></g>
+      </g>
+
+      <!-- running tally -->
+      <g class="pop" style="--d:.6s">
+        <g filter="url(#softsm)"><rect x="1124" y="232" width="336" height="150" rx="20" fill="#FBFAF6"/></g>
+        <text x="1292" y="278" font-size="16" font-weight="800" fill="#7C8C81" text-anchor="middle" letter-spacing="2.6">BAGS CONFIRMED</text>
+        <text x="1292" y="352" font-size="62" font-weight="800" fill="#2F6B4F" text-anchor="middle" id="s4count">0 / 20</text>
+      </g>
+      <g class="pop" style="--d:5.1s">
+        <rect x="1124" y="418" width="336" height="72" rx="18" fill="#4C9A72"/>
+        <path d="M1152,452 l13,15 l26,-31" stroke="#FBFAF6" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="1208" y="461" font-size="21" font-weight="800" fill="#FBFAF6" letter-spacing=".4">NOTHING MISSING</text>
+      </g>
+      <g class="fade" style="--d:5.6s">
+        <text x="1130" y="546" font-size="19" font-weight="600" fill="#42544A">Something short? Tell dispatch</text>
+        <text x="1130" y="574" font-size="19" font-weight="600" fill="#42544A">before you load up.</text>
+      </g>
+    </g>
+
+    <!-- ======================= SCENE 5 ======================= -->
+    <g class="scene" id="s5">
+      <rect width="1600" height="900" fill="#F4F1E8"/>
+      <rect width="1600" height="900" fill="url(#grid)" opacity=".5"/>
+      <rect y="690" width="1600" height="210" fill="#E3EDE2"/>
+      <rect y="690" width="1600" height="4" fill="#CFE0D2"/>
+
+      <!-- checking out with dispatch -->
+      <g class="fade">
+        <g transform="translate(200,690)"><use href="#brian-idle" transform="scale(.94)"/></g>
+        <g transform="translate(370,690)"><use href="#dispatch" transform="scale(.9)"/></g>
+      </g>
+      <g class="pop" style="--d:.7s">
+        <g filter="url(#softsm)"><rect x="72" y="272" width="332" height="78" rx="18" fill="#2F6B4F"/></g>
+        <path d="M186,350 l12,24 l22,-24 z" fill="#2F6B4F"/>
+        <text x="238" y="319" font-size="22" font-weight="800" fill="#FBFAF6" text-anchor="middle">"Heading out — Route 27."</text>
+      </g>
+
+      <!-- DON'T -->
+      <g class="rise" style="--d:.5s">
+        <rect x="596" y="212" width="462" height="428" rx="24" fill="#FBFAF6" stroke="#C4553F" stroke-width="4"/>
+        <rect x="596" y="212" width="462" height="66" rx="24" fill="#C4553F"/>
+        <rect x="596" y="256" width="462" height="22" fill="#C4553F"/>
+        <text x="640" y="256" font-size="26" font-weight="800" fill="#FBFAF6" letter-spacing="3">DON'T</text>
+        <circle cx="1008" cy="245" r="21" fill="#FBFAF6"/>
+        <path d="M999,236 l18,18 M1017,236 l-18,18" stroke="#C4553F" stroke-width="6" stroke-linecap="round"/>
+        <rect x="640" y="316" width="374" height="228" rx="14" fill="#EFF3EC" stroke="#B4C6B9" stroke-width="3" stroke-dasharray="10 8"/>
+        <g class="wobble">
+          <g transform="translate(676,404) rotate(-13)"><use href="#bag" transform="scale(.82)"/></g>
+          <g transform="translate(788,368) rotate(9)"><use href="#bag" transform="scale(.82)"/></g>
+          <g transform="translate(892,414) rotate(-6)"><use href="#bag" transform="scale(.82)"/></g>
+        </g>
+        <text x="827" y="596" font-size="21" font-weight="700" fill="#C4553F" text-anchor="middle">Stacked, loose, sliding around</text>
+      </g>
+
+      <!-- DO -->
+      <g class="rise" style="--d:.8s">
+        <rect x="1090" y="212" width="462" height="428" rx="24" fill="#FBFAF6" stroke="#4C9A72" stroke-width="4"/>
+        <rect x="1090" y="212" width="462" height="66" rx="24" fill="#4C9A72"/>
+        <rect x="1090" y="256" width="462" height="22" fill="#4C9A72"/>
+        <text x="1134" y="256" font-size="26" font-weight="800" fill="#FBFAF6" letter-spacing="3">DO</text>
+        <circle cx="1502" cy="245" r="21" fill="#FBFAF6"/>
+        <path d="M1492,245 l7,8 l14,-16" stroke="#4C9A72" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="1134" y="316" width="374" height="228" rx="14" fill="#EFF3EC" stroke="#B4C6B9" stroke-width="3" stroke-dasharray="10 8"/>
+        <g transform="translate(1156,440)"><use href="#bag" transform="scale(.82)"/></g>
+        <g transform="translate(1272,440)"><use href="#bag" transform="scale(.82)"/></g>
+        <g transform="translate(1388,440)"><use href="#bag" transform="scale(.82)"/></g>
+        <g class="fade" style="--d:1.5s">
+          <rect x="1140" y="470" width="362" height="12" rx="6" fill="#2F6B4F"/>
+          <circle cx="1146" cy="476" r="10" fill="#1B3B2C"/>
+          <circle cx="1496" cy="476" r="10" fill="#1B3B2C"/>
+        </g>
+        <text x="1321" y="596" font-size="21" font-weight="700" fill="#2F6B4F" text-anchor="middle">Flat, secured, side by side</text>
+      </g>
+    </g>
+
+    <!-- ======================= SCENE 6 ======================= -->
+    <g class="scene" id="s6">
+      <rect width="1600" height="900" fill="#F4F1E8"/>
+      <rect width="1600" height="900" fill="url(#grid)" opacity=".5"/>
+      <circle cx="240" cy="410" r="180" fill="#EAF1E7"/>
+
+      <!-- the bag this label is stuck to -->
+      <g class="fade">
+        <g transform="translate(158,300)"><use href="#bag" transform="scale(2.2)"/></g>
+      </g>
+      <g class="fade" style="--d:.5s" stroke="#9DB8A6" stroke-width="3" stroke-dasharray="9 7" fill="none">
+        <path d="M330,352 L500,272"/>
+        <path d="M330,440 L500,616"/>
+      </g>
+
+      <!-- the reusable label, blown up -->
+      <g class="pop" style="--d:.35s">
+        <g transform="translate(500,262) scale(2.8)">
+          <g filter="url(#soft)"><rect width="200" height="130" rx="10" fill="#FBFAF6"/></g>
+          <g class="label-slot" data-route="27" data-stop="04" data-dsp="NORTHSIDE" data-week="teal"></g>
+        </g>
+      </g>
+
+      <!-- callout A: bottom-left = route + stop -->
+      <g transform="translate(500,262) scale(2.8)">
+        <rect class="pulse" style="--d:1.2s" x="6" y="59" width="142" height="62" rx="7"
+              fill="none" stroke="#4C9A72" stroke-width="1.4"/>
+      </g>
+      <g class="fade" style="--d:1.3s">
+        <path d="M1075,514 h58" stroke="#4C9A72" stroke-width="3.5" fill="none"/>
+        <circle cx="1135" cy="514" r="6" fill="#4C9A72"/>
+        <text x="1160" y="502" font-size="22" font-weight="800" fill="#1B3B2C" letter-spacing=".4">ROUTE + STOP</text>
+        <text x="1160" y="534" font-size="18" font-weight="600" fill="#42544A">Which bag — and the</text>
+        <text x="1160" y="558" font-size="18" font-weight="600" fill="#42544A">order you drop it in.</text>
+      </g>
+
+      <!-- callout B: top-right week colour (pays off in scene 8) -->
+      <g transform="translate(500,262) scale(2.8)">
+        <rect class="pulse" style="--d:4.4s" x="79" y="9" width="110" height="36" rx="8"
+              fill="none" stroke="#3E8E9C" stroke-width="1.4"/>
+      </g>
+      <g class="fade" style="--d:4.5s">
+        <path d="M1075,338 h58" stroke="#3E8E9C" stroke-width="3.5" fill="none"/>
+        <circle cx="1135" cy="338" r="6" fill="#3E8E9C"/>
+        <text x="1160" y="326" font-size="22" font-weight="800" fill="#1B3B2C" letter-spacing=".4">WEEK COLOR</text>
+        <text x="1160" y="358" font-size="18" font-weight="600" fill="#42544A">Your DSP + the week.</text>
+        <text x="1160" y="382" font-size="18" font-weight="600" fill="#3E8E9C">Remember it for returns.</text>
+      </g>
+    </g>
+
+    <!-- ======================= SCENE 7 ======================= -->
+    <g class="scene" id="s7">
+      <rect width="1600" height="900" fill="#F4F1E8"/>
+      <rect width="1600" height="900" fill="url(#grid)" opacity=".45"/>
+
+      <!-- PHASE A: drive to the first stop -->
+      <g class="ph" style="--in:0s;--out:4s">
+        <rect y="640" width="1600" height="260" fill="#E3EDE2"/>
+        <rect y="640" width="1600" height="76" fill="#6E7B72"/>
+        <g class="dashmove">
+          <g fill="#F4F1E8">
+            <rect x="0" y="674" width="90" height="8" rx="4"/><rect x="170" y="674" width="90" height="8" rx="4"/>
+            <rect x="340" y="674" width="90" height="8" rx="4"/><rect x="510" y="674" width="90" height="8" rx="4"/>
+            <rect x="680" y="674" width="90" height="8" rx="4"/><rect x="850" y="674" width="90" height="8" rx="4"/>
+            <rect x="1020" y="674" width="90" height="8" rx="4"/><rect x="1190" y="674" width="90" height="8" rx="4"/>
+            <rect x="1360" y="674" width="90" height="8" rx="4"/><rect x="1530" y="674" width="90" height="8" rx="4"/>
+          </g>
+        </g>
+        <!-- customer's house -->
+        <g class="inR" style="--d:.2s">
+          <rect x="1104" y="330" width="380" height="310" rx="8" fill="#E9EFE6"/>
+          <path d="M1080,336 L1294,206 L1508,336 z" fill="#2F6B4F"/>
+          <rect x="1256" y="452" width="76" height="188" rx="6" fill="#C9A46C"/>
+          <circle cx="1318" cy="548" r="6" fill="#8C6C3E"/>
+          <rect x="1146" y="410" width="80" height="72" rx="6" fill="#CFE0D2"/>
+          <rect x="1372" y="410" width="80" height="72" rx="6" fill="#CFE0D2"/>
+          <rect x="1216" y="620" width="156" height="20" rx="4" fill="#D3E0D5"/>
+        </g>
+        <g class="drive">
+          <g transform="translate(560,644)"><use href="#car"/></g>
+        </g>
+      </g>
+
+      <!-- PHASE B: match the route + stop -->
+      <g class="ph" style="--in:4.2s;--out:8s">
+        <rect y="690" width="1600" height="210" fill="#E3EDE2"/>
+        <rect y="690" width="1600" height="4" fill="#CFE0D2"/>
+        <g transform="translate(196,690)"><use href="#brian-point" transform="scale(.96)"/></g>
+        <g transform="translate(560,404)"><use href="#cargobay"/></g>
+        <g transform="translate(586,436)">
+          <g transform="translate(0,0)"><use href="#bag" transform="scale(1.16)"/>
+            <rect x="6" y="106" width="74" height="26" rx="6" fill="#1B3B2C"/>
+            <text x="43" y="124" font-size="15" font-weight="800" fill="#FBFAF6" text-anchor="middle">STOP 01</text></g>
+          <g transform="translate(108,0)"><use href="#bag" transform="scale(1.16)"/>
+            <rect x="6" y="106" width="74" height="26" rx="6" fill="#8FA593"/>
+            <text x="43" y="124" font-size="15" font-weight="800" fill="#FBFAF6" text-anchor="middle">STOP 02</text></g>
+          <g transform="translate(216,0)"><use href="#bag" transform="scale(1.16)"/>
+            <rect x="6" y="106" width="74" height="26" rx="6" fill="#8FA593"/>
+            <text x="43" y="124" font-size="15" font-weight="800" fill="#FBFAF6" text-anchor="middle">STOP 03</text></g>
+          <g transform="translate(324,0)"><use href="#bag" transform="scale(1.16)"/>
+            <rect x="6" y="106" width="74" height="26" rx="6" fill="#8FA593"/>
+            <text x="43" y="124" font-size="15" font-weight="800" fill="#FBFAF6" text-anchor="middle">STOP 04</text></g>
+        </g>
+        <!-- eyes scanning the labels, then locking on stop 01 -->
+        <g class="scan" style="--d:4.4s">
+          <rect x="578" y="424" width="104" height="126" rx="10" fill="none" stroke="#8FA593" stroke-width="4" stroke-dasharray="12 8"/>
+        </g>
+        <g class="pop" style="--d:7s">
+          <rect x="578" y="424" width="104" height="126" rx="10" fill="none" stroke="#4C9A72" stroke-width="6"/>
+          <rect x="556" y="356" width="148" height="52" rx="12" fill="#4C9A72"/>
+          <text x="630" y="391" font-size="24" font-weight="800" fill="#FBFAF6" text-anchor="middle" letter-spacing="1">MATCH</text>
+        </g>
+        <g class="fade" style="--d:5s">
+          <text x="1124" y="452" font-size="24" font-weight="800" fill="#1B3B2C" letter-spacing=".4">ROUTE 27 · STOP 01</text>
+          <text x="1124" y="492" font-size="19" font-weight="600" fill="#42544A">Read the bottom-left of every</text>
+          <text x="1124" y="518" font-size="19" font-weight="600" fill="#42544A">label until it matches your stop.</text>
+        </g>
+      </g>
+
+      <!-- PHASE C: multi-bag orders are zip-tied -->
+      <g class="ph" style="--in:8.2s">
+        <rect y="690" width="1600" height="210" fill="#E3EDE2"/>
+        <rect y="690" width="1600" height="4" fill="#CFE0D2"/>
+        <g transform="translate(268,690)"><use href="#brian-idle" transform="scale(1)"/></g>
+
+        <g transform="translate(620,340)">
+          <use href="#bag" transform="scale(1.9)"/>
+          <g transform="translate(168,0)"><use href="#bag" transform="scale(1.9)"/></g>
+          <!-- zip tie binding the pair together -->
+          <g class="tie-l" style="--d:9.9s">
+            <rect x="-14" y="52" width="150" height="17" rx="6" fill="#3A4A40"/>
+          </g>
+          <g class="tie-r" style="--d:9.9s">
+            <rect x="136" y="52" width="164" height="17" rx="6" fill="#3A4A40"/>
+            <rect x="126" y="42" width="34" height="37" rx="7" fill="#2A3A31"/>
+          </g>
+        </g>
+
+        <!-- snips -->
+        <g class="snip" style="--d:9s">
+          <g transform="translate(690,376) rotate(-24)" stroke="#42544A" stroke-width="9" stroke-linecap="round" fill="none">
+            <path d="M0,0 L74,-30"/><path d="M0,20 L74,50"/>
+            <circle cx="86" cy="-40" r="13"/><circle cx="86" cy="60" r="13"/>
+          </g>
+        </g>
+
+        <g class="pop" style="--d:8.4s">
+          <rect x="612" y="212" width="386" height="60" rx="14" fill="#E0A33E"/>
+          <text x="805" y="251" font-size="23" font-weight="800" fill="#3B2A0C" text-anchor="middle" letter-spacing=".8">
+            MULTI-BAG ORDER
+          </text>
+        </g>
+        <g class="fade" style="--d:10.4s">
+          <text x="1090" y="404" font-size="26" font-weight="800" fill="#C4553F" letter-spacing=".4">CUT THE TIE FIRST</text>
+          <text x="1090" y="446" font-size="19" font-weight="600" fill="#42544A">Two or more bags tied together</text>
+          <text x="1090" y="472" font-size="19" font-weight="600" fill="#42544A">are one order. Take them all in</text>
+          <text x="1090" y="498" font-size="19" font-weight="600" fill="#42544A">together — never split them.</text>
+        </g>
+      </g>
+    </g>
+
+    <!-- ======================= SCENE 8 ======================= -->
+    <g class="scene" id="s8">
+      <rect width="1600" height="900" fill="#F4F1E8"/>
+      <rect width="1600" height="900" fill="url(#grid)" opacity=".45"/>
+
+      <!-- PHASE A: hand it over, take the photo -->
+      <g class="ph" style="--in:0s;--out:4.8s">
+        <rect y="690" width="1600" height="210" fill="#E3EDE2"/>
+        <rect y="690" width="1600" height="4" fill="#CFE0D2"/>
+        <g>
+          <rect x="1000" y="220" width="600" height="470" fill="#E9EFE6"/>
+          <rect x="1000" y="220" width="600" height="16" fill="#2F6B4F"/>
+          <rect x="1140" y="300" width="150" height="390" rx="8" fill="#8C6C3E"/>
+          <rect x="1152" y="312" width="126" height="366" rx="5" fill="#C9A46C"/>
+          <circle cx="1258" cy="500" r="8" fill="#6E5227"/>
+          <rect x="1400" y="330" width="120" height="110" rx="8" fill="#CFE0D2"/>
+        </g>
+        <g transform="translate(1090,690)"><use href="#customer" transform="scale(1.02)"/></g>
+        <g transform="translate(700,690)"><use href="#brian-point" transform="scale(1.06)"/></g>
+        <g class="handoff" style="--d:.5s">
+          <g transform="translate(752,466)"><use href="#bag" transform="scale(1.34)"/></g>
+        </g>
+
+        <!-- delivery photo -->
+        <g class="pop" style="--d:2.5s">
+          <g filter="url(#softsm)"><rect x="250" y="250" width="290" height="330" rx="22" fill="#FBFAF6"/></g>
+          <rect x="274" y="276" width="242" height="230" rx="10" fill="#E3EDE2"/>
+          <path d="M300,506 l58,-72 l46,54 l34,-38 l52,56 z" fill="#B4C6B9"/>
+          <circle cx="470" cy="318" r="18" fill="#CFE0D2"/>
+          <circle cx="395" cy="544" r="19" fill="#C4553F"/>
+          <rect x="330" y="534" width="34" height="20" rx="6" fill="#E3EDE2"/>
+          <rect x="426" y="534" width="34" height="20" rx="6" fill="#E3EDE2"/>
+        </g>
+        <rect class="flash" style="--d:3s" width="1600" height="900" fill="#FBFAF6"/>
+        <g class="pop" style="--d:3.4s">
+          <rect x="250" y="608" width="290" height="60" rx="14" fill="#4C9A72"/>
+          <path d="M284,638 l11,13 l22,-26" stroke="#FBFAF6" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="412" y="647" font-size="21" font-weight="800" fill="#FBFAF6" text-anchor="middle" letter-spacing="1">PHOTO SAVED</text>
+        </g>
+      </g>
+
+      <!-- PHASE B: collect the empties -->
+      <g class="ph" style="--in:5s;--out:9.6s">
+        <rect y="690" width="1600" height="210" fill="#E3EDE2"/>
+        <rect y="690" width="1600" height="4" fill="#CFE0D2"/>
+        <g transform="translate(1000,220)">
+          <rect width="600" height="470" fill="#E9EFE6"/>
+          <rect width="600" height="16" fill="#2F6B4F"/>
+          <rect x="140" y="80" width="150" height="390" rx="8" fill="#8C6C3E"/>
+          <rect x="152" y="92" width="126" height="366" rx="5" fill="#C9A46C"/>
+        </g>
+        <g transform="translate(320,690)"><use href="#brian-carry" transform="scale(1.04)"/></g>
+
+        <!-- empties waiting on the step -->
+        <g class="jar-fly" style="--d:1.1s;--fx:398px;--fy:-176px">
+          <g transform="translate(636,632)"><use href="#jar" transform="scale(1.5)"/></g>
+        </g>
+        <g class="jar-fly" style="--d:1.35s;--fx:352px;--fy:-186px">
+          <g transform="translate(700,632)"><use href="#jar" transform="scale(1.5)"/></g>
+        </g>
+        <g class="jar-fly" style="--d:1.6s;--fx:306px;--fy:-172px">
+          <g transform="translate(764,632)"><use href="#jar" transform="scale(1.5)"/></g>
+        </g>
+        <g class="jar-fly" style="--d:1.9s;--fx:250px;--fy:-158px">
+          <g transform="translate(830,616)">
+            <rect width="86" height="52" rx="8" fill="#7FA98C"/>
+            <rect y="4" width="86" height="14" rx="7" fill="#5F8E73"/>
+            <rect x="18" y="26" width="50" height="16" rx="4" fill="#FBFAF6"/>
+          </g>
+        </g>
+
+        <!-- returns crate -->
+        <g class="rise" style="--d:.4s">
+          <rect x="1060" y="452" width="330" height="212" rx="16" fill="#D9C79C"/>
+          <rect x="1060" y="452" width="330" height="34" rx="12" fill="#C9A46C"/>
+          <rect x="1096" y="512" width="258" height="60" rx="10" fill="#FBFAF6"/>
+          <text x="1225" y="552" font-size="26" font-weight="800" fill="#1B3B2C" text-anchor="middle" letter-spacing="2.4">RETURNS</text>
+          <rect x="1096" y="592" width="122" height="34" rx="8" fill="#E0A33E"/>
+          <text x="1157" y="616" font-size="16" font-weight="800" fill="#3B2A0C" text-anchor="middle">WEEK 31</text>
+        </g>
+        <g class="fade" style="--d:2.6s">
+          <text x="300" y="330" font-size="25" font-weight="800" fill="#1B3B2C" letter-spacing=".4">TAKE THE EMPTIES BACK</text>
+          <text x="300" y="372" font-size="19" font-weight="600" fill="#42544A">Empty jars and bags go back to</text>
+          <text x="300" y="398" font-size="19" font-weight="600" fill="#42544A">the warehouse at the end of your route.</text>
+        </g>
+      </g>
+
+      <!-- PHASE C: the week colour keeps returns separate -->
+      <g class="ph" style="--in:9.8s">
+        <rect y="690" width="1600" height="210" fill="#E3EDE2"/>
+        <rect y="690" width="1600" height="4" fill="#CFE0D2"/>
+        <g class="fade">
+          <text x="800" y="180" font-size="27" font-weight="800" fill="#1B3B2C" text-anchor="middle" letter-spacing="1">
+            THE WEEK COLOR KEEPS THESE APART
+          </text>
+        </g>
+
+        <!-- live orders -->
+        <g class="rise" style="--d:.25s">
+          <g transform="translate(196,286) scale(1.72)">
+            <g filter="url(#softsm)"><rect width="200" height="130" rx="10" fill="#FBFAF6"/></g>
+            <g class="label-slot" data-route="27" data-stop="04" data-dsp="NORTHSIDE" data-week="teal"></g>
+          </g>
+          <rect x="196" y="536" width="344" height="60" rx="14" fill="#3E8E9C"/>
+          <text x="368" y="575" font-size="21" font-weight="800" fill="#FBFAF6" text-anchor="middle" letter-spacing=".8">
+            THIS WEEK — DELIVER
+          </text>
+        </g>
+        <g transform="translate(196,286) scale(1.72)">
+          <rect class="pulse" style="--d:.9s" x="79" y="9" width="110" height="36" rx="8"
+                fill="none" stroke="#3E8E9C" stroke-width="1.6"/>
+        </g>
+
+        <!-- returns -->
+        <g class="rise" style="--d:.5s">
+          <g transform="translate(1060,286) scale(1.72)">
+            <g filter="url(#softsm)"><rect width="200" height="130" rx="10" fill="#FBFAF6"/></g>
+            <g class="label-slot" data-route="27" data-stop="04" data-dsp="NORTHSIDE" data-week="amber"></g>
+          </g>
+          <rect x="1060" y="536" width="344" height="60" rx="14" fill="#E0A33E"/>
+          <text x="1232" y="575" font-size="21" font-weight="800" fill="#3B2A0C" text-anchor="middle" letter-spacing=".8">
+            LAST WEEK — RETURN
+          </text>
+        </g>
+        <g transform="translate(1060,286) scale(1.72)">
+          <rect class="pulse" style="--d:1.15s" x="79" y="9" width="110" height="36" rx="8"
+                fill="none" stroke="#E0A33E" stroke-width="1.6"/>
+        </g>
+
+        <!-- divider -->
+        <g class="fade" style="--d:1.4s">
+          <line x1="800" y1="250" x2="800" y2="628" stroke="#B4C6B9" stroke-width="4" stroke-dasharray="14 12"/>
+          <circle cx="800" cy="440" r="34" fill="#F4F1E8" stroke="#B4C6B9" stroke-width="4"/>
+          <path d="M786,426 l28,28 M814,426 l-28,28" stroke="#C4553F" stroke-width="6" stroke-linecap="round"/>
+        </g>
+      </g>
+    </g>
+
+    <!-- ======================= CLOSING CARD ======================= -->
+    <g class="scene" id="s9">
+      <rect width="1600" height="900" fill="#1B3B2C"/>
+      <rect width="1600" height="900" fill="url(#gridDark)"/>
+      <circle cx="800" cy="420" r="330" fill="#22503A" opacity=".55"/>
+
+      <g class="pop" style="--d:.2s">
+        <rect x="716" y="212" width="168" height="168" rx="42" fill="#F4F1E8"/>
+        <text x="800" y="330" font-size="108" font-weight="800" fill="#1B3B2C" text-anchor="middle">L</text>
+      </g>
+      <g class="rise" style="--d:.55s">
+        <text x="800" y="452" font-size="34" font-weight="800" fill="#8FC3A3" text-anchor="middle" letter-spacing="14">LOCALE</text>
+      </g>
+      <g class="rise" style="--d:.8s">
+        <text x="800" y="576" font-size="60" font-weight="800" fill="#F4F1E8" text-anchor="middle">
+          That's a route, start to finish.
+        </text>
+      </g>
+      <g class="fade" style="--d:1.4s">
+        <line x1="620" y1="628" x2="980" y2="628" stroke="#4C9A72" stroke-width="3"/>
+        <text x="800" y="682" font-size="22" font-weight="700" fill="#8FC3A3" text-anchor="middle" letter-spacing="4">
+          DRIVER TRAINING
+        </text>
+      </g>
+    </g>
+  </svg>
+
+  <div class="dots" id="dots"></div>
+
+  <div class="capbar" id="capbar">
+    <span class="step" id="step">STEP 1 OF 8</span>
+    <p class="caption" id="caption"></p>
+  </div>
+
+  <div class="controls">
+    <button class="btn" id="playBtn" aria-label="Pause">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path id="playIcon" d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor"/></svg>
+      <span id="playLabel">PAUSE</span>
+    </button>
+    <button class="btn" id="replayBtn" aria-label="Replay">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z" fill="currentColor"/>
+      </svg>
+      <span>REPLAY</span>
+    </button>
+  </div>
+
+  <div class="gate" id="gate">
+    <div class="gate-mark">L</div>
+    <p class="gate-title">Delivering a Locale route</p>
+    <p class="gate-sub">DRIVER TRAINING</p>
+    <button class="gate-play" id="gatePlay">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l12 7-12 7z" fill="currentColor"/></svg>
+      <span>PLAY WITH SOUND</span>
+    </button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const NS = "http://www.w3.org/2000/svg";
+
+  /* Replaced by `python3 narration.py embed` with an inline base64 audio map. */
+  /*__AUDIO_MANIFEST__*/
+
+  /* ---------------------------------------------------------------
+     THE ONE REUSABLE BAG LABEL COMPONENT
+     Bottom-left  = route + stop  (which bag, and the drop-off order)
+     Top-right    = DSP name on the week colour
+     Rendered into every <g class="label-slot">, drawn in a 200x130 box
+     so callers can place and scale it however they like.
+     --------------------------------------------------------------- */
+  const WEEK_COLORS = {
+    teal:  { fill:"#3E8E9C", ink:"#FBFAF6", week:"WEEK 32" },
+    amber: { fill:"#E0A33E", ink:"#3B2A0C", week:"WEEK 31" },
+    plum:  { fill:"#8E6FB0", ink:"#FBFAF6", week:"WEEK 33" },
+    coral: { fill:"#D2694E", ink:"#FBFAF6", week:"WEEK 34" }
+  };
+
+  function labelMarkup(o){
+    const wk = WEEK_COLORS[o.week] || WEEK_COLORS.teal;
+    return `
+      <rect width="200" height="130" rx="10" fill="#FBFAF6" stroke="#CFE0D2" stroke-width="2"/>
+
+      <text x="13" y="31" font-size="11" font-weight="800" fill="#7C8C81" letter-spacing="1.5">DSP</text>
+      <rect x="82" y="12" width="104" height="30" rx="8" fill="${wk.fill}"/>
+      <text x="134" y="32" font-size="13" font-weight="800" fill="${wk.ink}"
+            text-anchor="middle" letter-spacing=".5">${o.dsp}</text>
+      <text x="134" y="52" font-size="8" font-weight="800" fill="#9AA8A0"
+            text-anchor="middle" letter-spacing="1.2">${wk.week}</text>
+
+      <line x1="13" y1="60" x2="187" y2="60" stroke="#E3EDE2" stroke-width="2"/>
+
+      <text x="13" y="80" font-size="9.5" font-weight="800" fill="#7C8C81" letter-spacing="1.4">ROUTE</text>
+      <text x="13" y="112" font-size="29" font-weight="800" fill="#1B3B2C">${o.route}</text>
+      <text x="74" y="80" font-size="9.5" font-weight="800" fill="#7C8C81" letter-spacing="1.4">STOP</text>
+      <text x="74" y="112" font-size="29" font-weight="800" fill="#1B3B2C">${o.stop}</text>
+
+      <g fill="#1B3B2C" opacity=".8">
+        <rect x="140" y="84" width="3" height="28"/><rect x="146" y="84" width="1.6" height="28"/>
+        <rect x="151" y="84" width="3.4" height="28"/><rect x="158" y="84" width="1.6" height="28"/>
+        <rect x="163" y="84" width="2.4" height="28"/><rect x="169" y="84" width="3.4" height="28"/>
+        <rect x="176" y="84" width="1.6" height="28"/><rect x="181" y="84" width="3" height="28"/>
+      </g>`;
+  }
+
+  document.querySelectorAll(".label-slot").forEach(function(slot){
+    slot.innerHTML = labelMarkup({
+      route: slot.dataset.route,
+      stop:  slot.dataset.stop,
+      dsp:   slot.dataset.dsp,
+      week:  slot.dataset.week
+    });
+  });
+
+  /* ---------------------------------------------------------------
+     Rolling rack: 4 shelves x 5 insulated bags = 20, plus the
+     staggered verification checkmarks used in scene 4.
+     --------------------------------------------------------------- */
+  const SHELVES = [120, 232, 344, 456];
+  const COLS = [14, 96, 178, 260, 342];
+  const BAG_SCALE = 0.6;
+  const CHECK_START = 0.75;
+  const CHECK_STEP = 0.2;
+
+  function el(name, attrs){
+    const node = document.createElementNS(NS, name);
+    for (const k in attrs) node.setAttribute(k, attrs[k]);
+    return node;
+  }
+
+  function buildRack(slot){
+    const withChecks = slot.dataset.checks === "1";
+    const frag = document.createDocumentFragment();
+
+    // frame
+    frag.appendChild(el("rect", {x:0, y:46, width:430, height:11, rx:5.5, fill:"#2F6B4F"}));
+    frag.appendChild(el("rect", {x:0, y:56, width:13, height:424, rx:6, fill:"#2F6B4F"}));
+    frag.appendChild(el("rect", {x:417, y:56, width:13, height:424, rx:6, fill:"#2F6B4F"}));
+
+    // shelves + bags
+    let n = 0;
+    SHELVES.forEach(function(shelfY, row){
+      COLS.forEach(function(x){
+        const g = el("g", {transform:"translate(" + x + "," + (shelfY - 86 * BAG_SCALE) + ")"});
+        g.appendChild(el("use", {href:"#bag", transform:"scale(" + BAG_SCALE + ")"}));
+        frag.appendChild(g);
+        n++;
+      });
+      frag.appendChild(el("rect", {x:0, y:shelfY, width:430, height:11, rx:4, fill:"#DCE6D8"}));
+      frag.appendChild(el("rect", {x:0, y:shelfY + 11, width:430, height:4, fill:"#C2D2C4"}));
+    });
+
+    // casters
+    [40, 150, 280, 390].forEach(function(cx){
+      frag.appendChild(el("circle", {cx:cx, cy:492, r:12, fill:"#3A4A40"}));
+      frag.appendChild(el("circle", {cx:cx, cy:492, r:5, fill:"#8FA593"}));
+    });
+
+    // verification checkmarks
+    if (withChecks){
+      let i = 0;
+      SHELVES.forEach(function(shelfY){
+        COLS.forEach(function(x){
+          const cx = x + 74 * BAG_SCALE / 2;
+          const cy = shelfY - 86 * BAG_SCALE / 2;
+          // Position on an outer <g>; the animated <g> must stay free of a
+          // transform attribute, or the CSS scale would wipe out the offset.
+          const holder = el("g", {transform:"translate(" + cx + "," + cy + ")"});
+          const g = el("g", {
+            class:"pop",
+            style:"--d:" + (CHECK_START + i * CHECK_STEP).toFixed(2) + "s"
+          });
+          g.appendChild(el("circle", {r:16, fill:"#4C9A72", stroke:"#FBFAF6", "stroke-width":3}));
+          g.appendChild(el("path", {
+            d:"M-7,0 l5,6 l9,-11",
+            stroke:"#FBFAF6", "stroke-width":3.6, fill:"none",
+            "stroke-linecap":"round", "stroke-linejoin":"round"
+          }));
+          holder.appendChild(g);
+          frag.appendChild(holder);
+          i++;
+        });
+      });
+    }
+    slot.appendChild(frag);
+  }
+
+  document.querySelectorAll(".rack-slot").forEach(buildRack);
+
+  /* ---------------------------------------------------------------
+     Scene timeline
+     --------------------------------------------------------------- */
+  const SCENES = [
+    { id:"s1", dur: 8200, cap:"Your DSP assigns you a route number. You'll need it at the warehouse." },
+    { id:"s2", dur: 9200, cap:"At the warehouse, show dispatch the code on your phone and give them your route number." },
+    { id:"s3", dur: 8000, cap:"Dispatch brings out your rack — about 20 insulated bags across 4 shelves." },
+    { id:"s4", dur: 9200, cap:"Check every bag before you leave. Confirm nothing is missing." },
+    { id:"s5", dur:11000, cap:"Tell dispatch you're leaving. Load bags flat and secured — don't stack orders on top of each other or let them slide around." },
+    { id:"s6", dur:10000, cap:"Bottom-left of the label = route + stop number. That tells you which bag goes where." },
+    { id:"s7", dur:13000, cap:"Match the route + stop. If it's a multi-bag order, remove the zip tie before you take it." },
+    { id:"s8", dur:14500, cap:"Deliver, take the photo, then collect empty jars and bags for return. Use the week color (top-right of the label) so returns never get mixed up with this week's orders." },
+    { id:"s9", dur: 7000, cap:"" }
+  ];
+  const TOTAL_STEPS = SCENES.length - 1;
+
+  /* ---------------------------------------------------------------
+     Voiceover. Each scene has an optional clip; when one exists the
+     scene stretches to fit it, so re-recording the script re-times
+     the animation. With no audio/ folder the authored timings above
+     are used and the file still plays through silently.
+     --------------------------------------------------------------- */
+  const TAIL_MS = 900;              // beat of silence after a line lands
+  const MANIFEST = (typeof window.__AUDIO__ === "object" && window.__AUDIO__) || null;
+  const clips = {};
+  const clipSecs = {};
+  let hasAudio = false;
+
+  function clipSrc(id){
+    return MANIFEST ? MANIFEST[id] : "audio/" + id + ".mp3";
+  }
+
+  function loadAudio(done){
+    let pending = 0, found = 0, settled = false;
+
+    function finish(){
+      if (settled) return;
+      settled = true;
+      done(found);
+    }
+
+    SCENES.forEach(function(s){
+      const src = clipSrc(s.id);
+      if (!src) return;
+      const audio = new Audio();
+      audio.preload = "auto";
+      pending++;
+      audio.addEventListener("loadedmetadata", function(){
+        if (isFinite(audio.duration) && audio.duration > 0){
+          clipSecs[s.id] = audio.duration;
+          found++;
+        }
+        if (--pending === 0) finish();
+      });
+      audio.addEventListener("error", function(){
+        if (--pending === 0) finish();
+      });
+      audio.src = src;
+      clips[s.id] = audio;
+    });
+
+    if (pending === 0) finish();
+    setTimeout(finish, 5000);       // never hang on a stalled request
+  }
+
+  function durationFor(i){
+    const s = SCENES[i];
+    const secs = clipSecs[s.id];
+    return secs ? Math.max(s.dur, secs * 1000 + TAIL_MS) : s.dur;
+  }
+
+  function silence(){
+    for (const id in clips){
+      const a = clips[id];
+      a.pause();
+      try { a.currentTime = 0; } catch(e){}
+    }
+  }
+
+  function speak(id){
+    const a = clips[id];
+    if (!hasAudio || !a) return;
+    try { a.currentTime = 0; } catch(e){}
+    a.play().catch(function(){});   // a blocked play shouldn't break playback
+  }
+
+  const stage    = document.getElementById("stage");
+  const capbar   = document.getElementById("capbar");
+  const caption  = document.getElementById("caption");
+  const stepPill = document.getElementById("step");
+  const dotsWrap = document.getElementById("dots");
+  const playBtn  = document.getElementById("playBtn");
+  const playIcon = document.getElementById("playIcon");
+  const playLabel= document.getElementById("playLabel");
+  const counter  = document.getElementById("s4count");
+
+  const ICON_PAUSE = "M7 5h4v14H7zM13 5h4v14h-4z";
+  const ICON_PLAY  = "M8 5l12 7-12 7z";
+
+  let index = 0;
+  let playing = true;
+  let timer = null;
+  let startedAt = 0;
+  let remaining = 0;
+  let rafId = null;
+
+  // progress dots
+  SCENES.forEach(function(_, i){
+    const b = document.createElement("button");
+    b.className = "dot";
+    b.setAttribute("aria-label", "Go to scene " + (i + 1));
+    b.addEventListener("click", function(){ goTo(i); });
+    dotsWrap.appendChild(b);
+  });
+  const dots = Array.prototype.slice.call(dotsWrap.children);
+
+  function paintDots(){
+    dots.forEach(function(d, i){
+      d.classList.toggle("is-on", i === index);
+      d.classList.toggle("is-done", i < index);
+    });
+  }
+
+  /* Scene 4 counts bags up in step with the checkmarks appearing. */
+  function runCounter(){
+    if (!counter) return;
+    const total = 20;
+    const delay = CHECK_START * 1000;
+    const span  = (total - 1) * CHECK_STEP * 1000;
+    const t0 = performance.now();
+    counter.textContent = "0 / " + total;
+
+    (function tick(now){
+      if (index !== 3 || !playing){
+        if (index === 3) rafId = requestAnimationFrame(tick);
+        return;
+      }
+      const t = now - t0 - delay;
+      const shown = Math.max(0, Math.min(total, Math.round(t / span * (total - 1)) + (t >= 0 ? 1 : 0)));
+      counter.textContent = shown + " / " + total;
+      if (shown < total) rafId = requestAnimationFrame(tick);
+    })(t0);
+  }
+
+  function show(i){
+    index = i;
+    const scene = SCENES[i];
+
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+
+    SCENES.forEach(function(s){
+      document.getElementById(s.id).classList.toggle("is-active", s.id === scene.id);
+    });
+
+    // Restart CSS animations cleanly on re-entry.
+    const active = document.getElementById(scene.id);
+    void active.getBoundingClientRect();
+
+    caption.textContent = scene.cap;
+    const isStep = i < TOTAL_STEPS;
+    stepPill.textContent = "STEP " + (i + 1) + " OF " + TOTAL_STEPS;
+    stepPill.style.display = isStep ? "" : "none";
+    capbar.classList.toggle("is-hidden", scene.cap === "");
+
+    paintDots();
+    if (scene.id === "s4") runCounter();
+
+    silence();
+    if (playing) speak(scene.id);
+
+    schedule(durationFor(i));
+  }
+
+  function schedule(ms){
+    clearTimeout(timer);
+    remaining = ms;
+    if (!playing) return;
+    startedAt = performance.now();
+    timer = setTimeout(next, ms);
+  }
+
+  function next(){
+    if (index >= SCENES.length - 1){
+      setPlaying(false);           // hold on the closing card
+      return;
+    }
+    show(index + 1);
+  }
+
+  function goTo(i){
+    show(Math.max(0, Math.min(SCENES.length - 1, i)));
+    if (!playing) setPlaying(true);
+  }
+
+  function setPlaying(on){
+    playing = on;
+    stage.classList.toggle("is-paused", !on);
+    playIcon.setAttribute("d", on ? ICON_PAUSE : ICON_PLAY);
+    playLabel.textContent = on ? "PAUSE" : "PLAY";
+
+    const voice = clips[SCENES[index].id];
+
+    if (on){
+      startedAt = performance.now();
+      clearTimeout(timer);
+      timer = setTimeout(next, remaining);
+      if (index === 3) runCounter();
+      if (hasAudio && voice) voice.play().catch(function(){});
+    } else {
+      clearTimeout(timer);
+      remaining = Math.max(0, remaining - (performance.now() - startedAt));
+      if (voice) voice.pause();
+    }
+  }
+
+  playBtn.addEventListener("click", function(){ setPlaying(!playing); });
+  document.getElementById("replayBtn").addEventListener("click", function(){ goTo(0); });
+
+  document.addEventListener("keydown", function(e){
+    // Before the title card is dismissed, any key just starts the show.
+    if (!document.getElementById("gate").classList.contains("is-gone")){
+      if (e.code === "Space" || e.key === "Enter"){ e.preventDefault(); begin(); }
+      return;
+    }
+    if (e.code === "Space"){ e.preventDefault(); setPlaying(!playing); }
+    else if (e.key === "ArrowRight") goTo(index + 1);
+    else if (e.key === "ArrowLeft")  goTo(index - 1);
+    else if (e.key.toLowerCase() === "r") goTo(0);
+  });
+
+  // Hide the chrome while it plays so screen recordings stay clean.
+  let idleTimer = null;
+  function wake(){
+    stage.classList.remove("is-idle");
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(function(){ stage.classList.add("is-idle"); }, 2600);
+  }
+  stage.addEventListener("mousemove", wake);
+  wake();
+
+  /* The title card doubles as the click that unlocks audio playback,
+     so start your screen recorder first, then press play. */
+  const gate = document.getElementById("gate");
+  let audioSettled = false;
+  let startRequested = false;
+
+  function begin(){
+    if (gate.classList.contains("is-gone")) return;
+    startRequested = true;
+    if (!audioSettled) return;      // wait a beat for clip metadata
+    gate.classList.add("is-gone");
+    playing = true;
+    show(0);
+  }
+
+  gate.addEventListener("click", begin);
+
+  loadAudio(function(found){
+    hasAudio = found > 0;
+    audioSettled = true;
+    if (startRequested) begin();
+  });
+})();
+</script>
+</body>
+</html>

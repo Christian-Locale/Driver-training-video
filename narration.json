@@ -1,0 +1,40 @@
+{
+  "_readme": [
+    "Voiceover script for locale-driver-training.html — edit the text freely.",
+    "Run `python3 narration.py voices` to pick a voice, put its id in voice_id below,",
+    "then `python3 narration.py speak` to generate audio/s1.mp3 ... audio/s9.mp3.",
+    "Scene durations in the animation follow these clips automatically."
+  ],
+
+  "voice_name": "",
+  "voice_id": "",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_128",
+
+  "voice_settings": {
+    "stability": 0.45,
+    "similarity_boost": 0.78,
+    "style": 0.15,
+    "use_speaker_boost": true
+  },
+
+  "scenes": {
+    "s1": "Every route starts with your DSP. Before your shift, they'll send you a route number. That number is how the warehouse knows which orders are yours, so keep it handy — dispatch is going to ask for it the moment you walk in.",
+
+    "s2": "When you get to the warehouse, head for the roll-up door and find the on-site dispatcher. Pull up the check-in code on your phone, show it to them, and give them your route number.",
+
+    "s3": "Dispatch will pull your rack and wheel it out to you. It's a rolling shelf unit — four shelves, holding around twenty insulated bags. That rack is your entire route.",
+
+    "s4": "Before you take it anywhere, count it. Go shelf by shelf and check every single bag. If something is missing, this is the moment to say so — not after you've already left the warehouse.",
+
+    "s5": "Let dispatch know you're heading out, then load your car with a bit of care. Bags lie flat and stay put. Don't stack orders on top of each other, and don't let them slide around back there. That's how food arrives damaged.",
+
+    "s6": "Now the part that matters most: the label. Look at the bottom-left corner. That's your route number and your stop number — which bag this is, and the order you drop it in. And up in the top-right, you'll see your DSP name on a colored background. Remember that color.",
+
+    "s7": "At the stop, don't guess — read the labels. Find the bag whose route and stop number match where you are. Then check whether it's one bag or several. If two or more are zip-tied together, that's a single multi-bag order. Cut the tie and carry all of them in together. Never split an order.",
+
+    "s8": "Hand the order to the customer and take your delivery photo. Then collect the empties — jars and bags that go back to the warehouse. This is where that top-right color earns its keep. The week color tells you at a glance what's a live order for this week and what's a return from a previous one. Keep those two apart, and you'll never hand somebody the wrong bag.",
+
+    "s9": "And that's a route, start to finish. Welcome to Locale."
+  }
+}
