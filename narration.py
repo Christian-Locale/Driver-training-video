@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
 """Generate the training-video voiceover with ElevenLabs.
 
+First-time setup:
+
+    python3 narration.py setkey              # paste your API key, hidden
+    python3 narration.py setvoice "Brian"    # pick the narrator by name or id
+    python3 narration.py speak --only s9     # one short line, to check the read
+    python3 narration.py speak               # the whole script
+
+Also useful:
+
     python3 narration.py voices              # what's in your account
     python3 narration.py models              # which TTS models you can use
     python3 narration.py speak --dry-run     # character count + credit estimate
-    python3 narration.py speak               # write audio/s1.mp3 ... s9.mp3
     python3 narration.py speak --only s6,s7  # re-do just a couple of lines
     python3 narration.py embed               # inline the audio into one HTML file
 

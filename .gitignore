@@ -11,6 +11,9 @@ audio/
 *.png
 *.jpg
 
+# Reference art is a source file, not generated output
+!reference/**
+
 # Python
 __pycache__/
 .venv/

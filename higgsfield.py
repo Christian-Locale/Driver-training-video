@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Generate video clips with the Higgsfield API.
+"""Generate images and video clips with the Higgsfield API.
 
     python3 higgsfield.py check
-    python3 higgsfield.py video --prompt "driver checking mirrors before merging"
+    python3 higgsfield.py image --prompt "Brian at the warehouse counter" --ref assets/brian.jpg
     python3 higgsfield.py video --prompt "truck pulls away from loading dock" --image frames/dock.jpg
 """
 
@@ -149,6 +149,13 @@ def upload_file(path, headers):
     return ticket["public_url"]
 
 
+def resolve_image(source, headers):
+    """Return an HTTPS URL for a reference image, uploading it if it is local."""
+    if source.startswith(("http://", "https://")):
+        return source
+    return upload_file(source, headers)
+
+
 def submit(endpoint, payload, headers):
     print("Submitting to {}".format(endpoint))
     response = requests.post(
@@ -196,7 +203,7 @@ def wait_for_result(request, headers, timeout=900):
 def collect_urls(result):
     """Pull downloadable media URLs out of a completed result."""
     urls = []
-    for key in ("video", "audio", "zip", "mov"):
+    for key in ("video", "image", "audio", "zip", "mov"):
         item = result.get(key)
         if isinstance(item, dict) and item.get("url"):
             urls.append(item["url"])
@@ -223,6 +230,30 @@ def download(url, name=None):
                 handle.write(chunk)
     print("Saved {} ({:.1f} MB)".format(dest, dest.stat().st_size / 1e6))
     return dest
+
+
+def deliver(result, out=None):
+    """Download every asset from a terminal result, or exit explaining why not."""
+    status = result["status"]
+    if status != "completed":
+        message = {
+            "nsfw": "Blocked by content moderation.",
+            "canceled": "The request was canceled.",
+        }.get(status, "Generation failed.")
+        sys.exit("{} {}".format(message, result.get("error") or ""))
+
+    urls = collect_urls(result)
+    if not urls:
+        sys.exit("Completed but returned no media:\n" + json.dumps(result, indent=2))
+
+    saved = []
+    for index, url in enumerate(urls):
+        name = out if out and len(urls) == 1 else None
+        if out and len(urls) > 1:
+            stem, _, ext = out.rpartition(".")
+            name = "{}-{}.{}".format(stem or out, index + 1, ext or "mp4")
+        saved.append(download(url, name))
+    return saved
 
 
 def cmd_check(args):
@@ -260,25 +291,41 @@ def cmd_video(args):
     else:
         endpoint = MODELS[args.model]["text"]
 
-    result = wait_for_result(submit(endpoint, payload, headers), headers)
-    status = result["status"]
+    deliver(wait_for_result(submit(endpoint, payload, headers), headers), args.out)
 
-    if status != "completed":
-        message = {
-            "nsfw": "Blocked by content moderation.",
-            "canceled": "The request was canceled.",
-        }.get(status, "Generation failed.")
-        sys.exit("{} {}".format(message, result.get("error") or ""))
 
-    urls = collect_urls(result)
-    if not urls:
-        sys.exit("Completed but returned no media:\n" + json.dumps(result, indent=2))
-    for index, url in enumerate(urls):
-        name = args.out if args.out and len(urls) == 1 else None
-        if args.out and len(urls) > 1:
-            stem, _, ext = args.out.rpartition(".")
-            name = "{}-{}.{}".format(stem or args.out, index + 1, ext or "mp4")
-        download(url, name)
+def cmd_image(args):
+    """Generate a still, optionally conditioned on reference images."""
+    headers = load_credentials()
+    if args.model not in IMAGE_MODELS:
+        sys.exit("Unknown model '{}'. Choose from: {}".format(
+            args.model, ", ".join(sorted(IMAGE_MODELS))
+        ))
+    model = IMAGE_MODELS[args.model]
+    field = model["refs"]
+
+    payload = {"prompt": args.prompt}
+    if args.n != 1:
+        payload[model["count"]] = args.n
+    if args.aspect and model["aspect"]:
+        payload["aspect_ratio"] = args.aspect
+    if args.seed is not None:
+        payload["seed"] = args.seed
+
+    if args.ref:
+        if not field:
+            sys.exit("Model '{}' does not accept reference images.".format(args.model))
+        urls = [resolve_image(ref, headers) for ref in args.ref]
+        if field == "input_images":
+            payload[field] = [{"type": "image_url", "image_url": u} for u in urls]
+        elif len(urls) > 1:
+            sys.exit("Model '{}' accepts only one reference image.".format(args.model))
+        else:
+            payload[field] = urls[0]
+    elif field in ("image_url", "image_reference_url"):
+        sys.exit("Model '{}' requires at least one --ref.".format(args.model))
+
+    deliver(wait_for_result(submit(model["endpoint"], payload, headers), headers), args.out)
 
 
 def main():
@@ -297,6 +344,18 @@ def main():
     video.add_argument("--negative", help="things to avoid in the output")
     video.add_argument("--out", help="output filename, e.g. mirrors.mp4")
     video.set_defaults(func=cmd_video)
+
+    image = sub.add_parser("image", help="generate a still image")
+    image.add_argument("--prompt", required=True, help="what the image should show")
+    image.add_argument("--ref", action="append", metavar="PATH_OR_URL",
+                       help="reference image to condition on; repeat for several")
+    image.add_argument("--model", default="nano", choices=sorted(IMAGE_MODELS),
+                       help="model (default: nano, which keeps a referenced character consistent)")
+    image.add_argument("--aspect", default="16:9", help="aspect ratio (default: 16:9)")
+    image.add_argument("-n", type=int, default=1, help="how many variations to generate")
+    image.add_argument("--seed", type=int, help="reuse a seed to reproduce a result")
+    image.add_argument("--out", help="output filename, e.g. s2-keyframe.png")
+    image.set_defaults(func=cmd_image)
 
     args = parser.parse_args()
     args.func(args)
