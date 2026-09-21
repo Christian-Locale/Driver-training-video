@@ -123,6 +123,7 @@
 
   /* Film-style progress — one bar for the whole piece, not slide dots. */
   .filmbar{
+    display:none;
     position:absolute;left:0;right:0;top:0;z-index:4;
     height:.55cqh;background:rgba(27,59,44,.18);
     pointer-events:none;
@@ -695,17 +696,26 @@
     .langpick{
       position:absolute;
       inset:0;
+      z-index:5;
       flex:none;
-      align-items:flex-end;
+      align-items:center;
       justify-content:center;
-      padding:16px 20px calc(88px + env(safe-area-inset-bottom, 0px));
+      padding:0 20px;
     }
     .langpick-row{
       flex-direction:column;
       width:min(100%, 280px);
       gap:12px;
     }
-    .lang-btn{width:100%;max-width:none;flex:none}
+    .lang-btn{
+      width:100%;
+      max-width:none;
+      flex:none;
+      color:#F4F1E8;
+      background:#2F6B4F;
+      border-color:#8FC3A3;
+      font-size:16px;
+    }
     .stage.is-idle .controls{opacity:1}
   }
 
