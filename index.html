@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Driver Training: A Route, Start to Finish</title>
 <style>
   :root{
@@ -24,7 +24,11 @@
   }
 
   *{box-sizing:border-box}
-  html,body{margin:0;height:100%}
+  html{
+    -webkit-text-size-adjust:100%;
+    text-size-adjust:100%;
+  }
+  html,body{margin:0;height:100%;height:100dvh}
   body{
     background:
       radial-gradient(120% 90% at 50% 0%, #23402F 0%, #16261C 55%, #101A14 100%);
@@ -37,7 +41,7 @@
   /* ---------- Stage: fixed 16:9, everything scales with it ---------- */
   .stage{
     position:relative;
-    width:min(100vw, calc(100vh * 16 / 9));
+    width:min(100%, calc(100dvh * 16 / 9));
     aspect-ratio:16/9;
     background:var(--bg);
     overflow:hidden;
@@ -45,6 +49,7 @@
     box-shadow:0 40px 90px rgba(0,0,0,.45);
     cursor:default;
   }
+  .screen{position:absolute;inset:0}
   .canvas{position:absolute;inset:0;width:100%;height:100%;display:block;font-family:var(--font-display);
     animation:handheld 6.8s ease-in-out infinite}
   .canvas text{font-family:var(--font-display)}
@@ -67,6 +72,9 @@
     transform-origin:50% 50%;
     transition:opacity .28s ease, transform .34s cubic-bezier(.4,0,.2,1), visibility .28s;
   }
+  /* Hidden scenes used to stay in the SVG render tree. A transform on
+     .canvas then invalidated all 16 of them every frame. */
+  .scene:not(.is-active):not(.is-leaving){display:none}
   .scene.is-leaving{
     opacity:0;visibility:visible;
     transform:translateX(-140px) scale(1.05);
@@ -199,7 +207,7 @@
     pointer-events:none;
     transition:opacity .4s ease,visibility .4s ease;
   }
-  .langpick.is-gone{opacity:0;visibility:hidden}
+  .langpick.is-gone{opacity:0;visibility:hidden;display:none}
   .langpick-row{
     display:flex;gap:1.4cqw;
     pointer-events:auto;
@@ -559,11 +567,177 @@
   @media (prefers-reduced-motion:reduce){
     .scene.is-active *{animation-duration:.01ms!important;animation-iteration-count:1!important}
   }
+
+  /* Phones cannot composite feTurbulence grain + a handheld transform
+     over a full 1600×900 SVG. Story beats stay; the film-stock pass goes. */
+  @media (hover:none), (pointer:coarse), (max-width:900px){
+    .canvas{animation:none}
+    .grain{display:none}
+    .cam{will-change:auto}
+    .canvas [filter]{filter:none}
+    .scene.is-active .float,
+    .scene.is-active .shaft,
+    .scene.is-active .shimmer,
+    .scene.is-active .glow,
+    .scene.is-active .dashmove,
+    .eye{animation:none}
+  }
+
+  /* ---------- Phone / tablet: keep the film 16:9, make chrome usable ---------- */
+  @media (max-width:1100px){
+    button{touch-action:manipulation}
+    .btn{
+      min-height:44px;
+      font-size:max(12px,1.02cqw);
+      letter-spacing:.08em;
+      padding:max(8px,1cqh) max(12px,1.5cqw);
+    }
+    .btn svg{width:16px;height:16px;flex:0 0 auto}
+    .caption{font-size:max(15px,1.95cqw)}
+    .step{font-size:max(11px,.92cqw);letter-spacing:.14em}
+    .dot{width:11px;height:11px;margin:0 5px}
+    .lang-btn{
+      font-size:max(15px,1.45cqw);
+      min-width:132px;
+      min-height:48px;
+      letter-spacing:.06em;
+    }
+    .capbar{padding-right:max(28cqw, 11rem)}
+  }
+
+  @media (max-width:900px) and (orientation:portrait){
+    html,body{width:100%;max-width:100%}
+    body{
+      display:block;
+      padding:
+        env(safe-area-inset-top)
+        env(safe-area-inset-right)
+        env(safe-area-inset-bottom)
+        env(safe-area-inset-left);
+    }
+    .stage{
+      width:100%;
+      height:100%;
+      aspect-ratio:auto;
+      display:flex;
+      flex-direction:column;
+      box-shadow:none;
+      background:#15281F;
+      container-type:normal;
+    }
+    .screen{
+      position:relative;
+      inset:auto;
+      width:min(100%, calc(48dvh * 16 / 9));
+      margin-inline:auto;
+      flex:0 0 auto;
+      aspect-ratio:16/9;
+      max-height:48dvh;
+      background:var(--bg);
+      overflow:hidden;
+      container-type:size;
+    }
+    .canvas,.vignette,.cutflash,.filmbar{
+      position:absolute;inset:0;width:100%;height:100%;
+    }
+    .controls{
+      top:max(10px, env(safe-area-inset-top, 0px));
+      right:10px;
+      gap:8px;
+    }
+    .dots{
+      position:relative;
+      left:auto;right:auto;bottom:auto;
+      padding:10px 12px 0;
+      gap:0;
+      opacity:1;
+    }
+    .stage.is-idle .dots{opacity:1}
+    .capbar{
+      position:relative;
+      left:auto;right:auto;bottom:auto;
+      flex:1 1 auto;
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+      align-items:flex-start;
+      justify-content:flex-start;
+      gap:8px;
+      padding:12px 20px 8px;
+      background:#15281F;
+      overflow:auto;
+      -webkit-overflow-scrolling:touch;
+    }
+    .capbar.is-hidden{
+      transform:none;
+      opacity:0;
+      flex:0 0 0;
+      min-height:0;
+      padding:0;
+      overflow:hidden;
+    }
+    .step{padding:0;opacity:.85}
+    .caption{
+      font-size:1.05rem;
+      line-height:1.4;
+      margin:0;
+      max-width:40rem;
+    }
+    .nav{
+      position:relative;
+      right:auto;bottom:auto;
+      width:100%;
+      justify-content:stretch;
+      gap:10px;
+      padding:8px 16px 14px;
+      background:#15281F;
+      margin-top:auto;
+    }
+    .nav .btn{flex:1 1 0;justify-content:center}
+    .langpick{
+      position:relative;
+      inset:auto;
+      flex:1 1 auto;
+      align-items:center;
+      justify-content:center;
+      padding:28px 20px 12px;
+    }
+    .langpick-row{
+      flex-direction:column;
+      width:min(100%, 280px);
+      gap:12px;
+    }
+    .lang-btn{width:100%;max-width:none;flex:none}
+    .stage.is-picking .capbar,
+    .stage.is-picking .dots{
+      display:none;
+    }
+    .stage.is-idle .controls{opacity:1}
+  }
+
+  @media (max-width:1100px) and (orientation:landscape){
+    body{
+      padding:
+        env(safe-area-inset-top)
+        env(safe-area-inset-right)
+        env(safe-area-inset-bottom)
+        env(safe-area-inset-left);
+    }
+    .stage{box-shadow:none}
+    .capbar{
+      padding-left:max(16px, 3.2cqw);
+      padding-bottom:max(10px, 1.6cqh);
+      padding-right:max(11rem, 28cqw);
+    }
+    .nav{right:max(12px, 2cqw);bottom:max(10px, 2cqh)}
+    .controls{top:max(8px, 2cqh);right:max(8px, 2cqw)}
+  }
 </style>
 </head>
 <body>
 
 <div class="stage is-picking" id="stage">
+  <div class="screen">
   <svg class="canvas" viewBox="0 0 1600 900" role="img" aria-label="Driver training animation">
 
     <!-- ================= REUSABLE DEFINITIONS ================= -->
@@ -1812,13 +1986,6 @@
   <div class="cutflash" id="cutflash"></div>
   <div class="filmbar" aria-hidden="true"><i id="filmfill"></i></div>
 
-  <div class="dots" id="dots"></div>
-
-  <div class="capbar" id="capbar">
-    <span class="step" id="step">STEP 1 OF 8</span>
-    <p class="caption" id="caption"></p>
-  </div>
-
   <div class="controls">
     <button class="btn" id="playBtn" aria-label="Pause">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path id="playIcon" d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor"/></svg>
@@ -1831,6 +1998,21 @@
       <span id="replayLabel">REPLAY</span>
     </button>
   </div>
+  </div>
+
+  <div class="langpick" id="langpick">
+    <div class="langpick-row">
+      <button type="button" class="lang-btn" data-lang="en">English</button>
+      <button type="button" class="lang-btn" data-lang="es">Español</button>
+    </div>
+  </div>
+
+  <div class="dots" id="dots"></div>
+
+  <div class="capbar" id="capbar">
+    <span class="step" id="step">STEP 1 OF 8</span>
+    <p class="caption" id="caption"></p>
+  </div>
 
   <div class="nav" id="nav">
     <button class="btn nav-back" id="backBtn" disabled aria-label="Back">
@@ -1841,13 +2023,6 @@
       <span id="contLabel">CONTINUE</span>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l8 7-8 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
-  </div>
-
-  <div class="langpick" id="langpick">
-    <div class="langpick-row">
-      <button type="button" class="lang-btn" data-lang="en">English</button>
-      <button type="button" class="lang-btn" data-lang="es">Español</button>
-    </div>
   </div>
 </div>
 
@@ -2279,7 +2454,7 @@
      the animation. With no audio/ folder the authored timings above
      are used and the file still plays through silently.
      --------------------------------------------------------------- */
-  const TAIL_MS = 900;              // beat of silence after a line lands
+  const TAIL_MS = 0;                // unlock Continue as soon as the line ends
   const AUDIO_REV = "ugbbys2-es-1";  // bump when re-recording so the browser drops stale clips
   const MANIFEST = (typeof window.__AUDIO__ === "object" && window.__AUDIO__) || null;
   const clips = {};
@@ -2288,6 +2463,7 @@
   let audioLang = null;
   let audioReady = false;
   let loadGen = 0;
+  const LITE = window.matchMedia("(hover: none), (pointer: coarse), (max-width: 900px)").matches;
 
   function clipSrc(id){
     const code = lang || "en";
@@ -2298,6 +2474,30 @@
     }
     const folder = code === "es" ? "audio/es/" : "audio/";
     return folder + id + ".mp3?v=" + AUDIO_REV;
+  }
+
+  function attachClip(id, src){
+    if (clips[id]) return clips[id];
+    const audio = new Audio();
+    audio.preload = LITE ? "metadata" : "auto";
+    audio.setAttribute("playsinline", "");
+    audio.setAttribute("data-vo", id);
+    audio.style.display = "none";
+    document.body.appendChild(audio);
+    audio.addEventListener("loadedmetadata", function(){
+      if (isFinite(audio.duration) && audio.duration > 0){
+        clipSecs[id] = audio.duration;
+        hasAudio = true;
+      }
+    });
+    audio.addEventListener("ended", function(){
+      if (picking) return;
+      if (!SCENES[index] || SCENES[index].id !== id) return;
+      sceneFinished();
+    });
+    audio.src = src;
+    clips[id] = audio;
+    return audio;
   }
 
   function loadAudio(done){
@@ -2313,6 +2513,13 @@
     Object.keys(clipSecs).forEach(function(id){ delete clipSecs[id]; });
     hasAudio = false;
 
+    /* Phones: don't open 15 network requests before the first scene.
+       speak() creates the current clip and prefetches the next one. */
+    if (LITE){
+      if (gen === loadGen) done(0);
+      return;
+    }
+
     let pending = 0, found = 0, settled = false;
 
     function finish(){
@@ -2324,28 +2531,17 @@
     SCENES.forEach(function(s){
       const src = clipSrc(s.id);
       if (!src) return;
-      const audio = new Audio();
-      audio.preload = "auto";
-      audio.setAttribute("playsinline", "");
-      audio.setAttribute("data-vo", s.id);
-      audio.style.display = "none";
-      document.body.appendChild(audio);
       pending++;
+      const audio = attachClip(s.id, src);
       audio.addEventListener("loadedmetadata", function(){
         if (gen !== loadGen) return;
-        if (isFinite(audio.duration) && audio.duration > 0){
-          clipSecs[s.id] = audio.duration;
-          found++;
-          hasAudio = true;
-        }
+        if (isFinite(audio.duration) && audio.duration > 0) found++;
         if (--pending === 0) finish();
       });
       audio.addEventListener("error", function(){
         if (gen !== loadGen) return;
         if (--pending === 0) finish();
       });
-      audio.src = src;
-      clips[s.id] = audio;
     });
 
     hasAudio = Object.keys(clips).length > 0;
@@ -2357,6 +2553,14 @@
     const s = SCENES[i];
     const secs = clipSecs[s.id];
     return secs ? Math.max(s.dur, secs * 1000 + TAIL_MS) : s.dur;
+  }
+
+  /* Continue unlocks when the voiceover ends, not after leftover
+     authored padding on the slide. */
+  function unlockFor(i){
+    const s = SCENES[i];
+    const secs = clipSecs[s.id];
+    return secs ? secs * 1000 + TAIL_MS : s.dur;
   }
 
   function silence(){
@@ -2376,14 +2580,25 @@
   }
 
   function speak(id){
-    const a = clips[id];
-    if (!a) return;
+    let a = clips[id];
+    if (!a){
+      const src = clipSrc(id);
+      if (!src) return;
+      a = attachClip(id, src);
+    }
     a.muted = false;
     a.volume = 1;
     try { a.currentTime = 0; } catch(e){}
     a.play().catch(function(){
       setTimeout(function(){ a.play().catch(function(){}); }, 60);
     });
+    if (LITE){
+      const next = SCENES[index + 1];
+      if (next && !clips[next.id]){
+        const src = clipSrc(next.id);
+        if (src) attachClip(next.id, src);
+      }
+    }
   }
 
   const stage    = document.getElementById("stage");
@@ -2569,7 +2784,7 @@
     playLabel.textContent = t("pause");
     speak(scene.id);
 
-    schedule(ms);
+    schedule(unlockFor(i));
     paintNav();
     paintProgress();
   }
@@ -2582,8 +2797,10 @@
   }
 
   function sceneFinished(){
+    if (sceneDone) return;
     sceneDone = true;
     remaining = 0;
+    clearTimeout(timer);
     furthest = Math.max(furthest, index);
     paintNav();
     paintProgress();
@@ -2658,12 +2875,16 @@
 
   // Hide the chrome while it plays so screen recordings stay clean.
   let idleTimer = null;
+  const finePointer = window.matchMedia("(hover:hover) and (pointer:fine)");
   function wake(){
     stage.classList.remove("is-idle");
     clearTimeout(idleTimer);
+    if (!finePointer.matches) return;
     idleTimer = setTimeout(function(){ stage.classList.add("is-idle"); }, 2600);
   }
   stage.addEventListener("mousemove", wake);
+  stage.addEventListener("touchstart", wake, {passive:true});
+  stage.addEventListener("pointerdown", wake);
   wake();
 
   function chooseLang(next){
