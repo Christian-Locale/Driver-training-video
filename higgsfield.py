@@ -18,7 +18,7 @@ from urllib.parse import urlparse
 
 import requests
 
-from envfile import load_env
+from project import load_env
 
 BASE_URL = "https://api.higgsfield.ai"
 ROOT = Path(__file__).parent

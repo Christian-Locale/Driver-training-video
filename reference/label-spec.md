@@ -50,6 +50,6 @@ is still TBD.
 | Route `27`, Stop `04` | Route `21000`, Bin `13` |
 | Cream/green branded | White and black, minimal |
 
-Scenes 6, 7 and 8 all lean on the label, and the scene 6 / scene 8 narration
-describes "your DSP name on a colored background" — that wording needs to change
-to match the real label.
+Scenes 6, 7 and 8 all lean on the label. The scene 6 and scene 8 narration in
+`narration.json` has been reworded to describe the outlined `DSP` box rather
+than a filled DSP name.

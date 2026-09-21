@@ -1,4 +1,66 @@
 {
-  "_comment": "placeholder - will be replaced",
-  "shots": []
+  "character_sheet": "assets/brian-character-sheet.jpg",
+
+  "style": "Clean 2D illustrated style with confident inked linework and flat cel shading, muted natural palette on a warm cream background, soft ambient occlusion, no photorealism, no 3D render, no anime.",
+
+  "character": "Brian, a 28-year-old delivery driver, 6 feet tall, average build. Dark blond hair pulled into a small top knot, short trimmed beard, friendly open expression. Wears an oversized off-white t-shirt with a grayscale photographic graphic on the chest, khaki cargo joggers with a thigh pocket and elasticated cuffs, and black low-top sneakers with gum soles.",
+
+  "negative": "photorealistic, 3D render, anime, distorted hands, extra fingers, warped face, text, lettering, signage, watermark, logo, gibberish writing, oversaturated colors",
+
+  "palette": {
+    "bg": "#F4F1E8",
+    "ink": "#1B2E24",
+    "green_900": "#1B3B2C",
+    "green_700": "#2F6B4F",
+    "green_300": "#8FC3A3",
+    "khaki": "#C9A46C",
+    "paper": "#FBFAF6"
+  },
+
+  "voice": {
+    "voice_id": "UgBBYS2sOqTuMpoF3BR0",
+    "model_id": "eleven_multilingual_v2",
+    "stability": 0.45,
+    "similarity_boost": 0.75,
+    "speed": 0.94
+  },
+
+  "shots": [
+    {
+      "id": "s2a",
+      "step": 2,
+      "caption": "At the warehouse, show dispatch the code on your phone.",
+      "narration": "When you get to the warehouse, find dispatch and show them the code on your phone.",
+      "duration": 5,
+      "scene": "Wide shot inside a bright grocery distribution warehouse. Brian stands at a dispatch counter facing a dispatcher in a dark green polo and cap. Brian holds up his phone toward the dispatcher with his right hand, screen facing away from camera. Stacked insulated delivery bags and a metal rack are visible behind the counter. Warm daylight from high windows.",
+      "motion": "Brian raises his phone slightly and the dispatcher leans in to look at the screen, then nods. Subtle natural body movement, camera locked off, no camera push.",
+      "overlay": {
+        "kind": "phone_screen",
+        "label": "ROUTE CODE",
+        "value": "4417",
+        "x": 1180,
+        "y": 372,
+        "w": 168,
+        "h": 300
+      }
+    },
+    {
+      "id": "s2b",
+      "step": 2,
+      "caption": "Give them your route number.",
+      "narration": "Then give them your route number.",
+      "duration": 5,
+      "scene": "Medium shot inside the same warehouse. Brian stands at the dispatch counter, relaxed, speaking to the dispatcher who writes on a clipboard. The metal rack of insulated bags sits behind them. Same warm daylight and cream-toned palette.",
+      "motion": "Brian speaks and gestures once with an open hand; the dispatcher writes on the clipboard. Gentle idle motion, camera locked off.",
+      "overlay": {
+        "kind": "callout",
+        "label": "ROUTE",
+        "value": "17",
+        "x": 1320,
+        "y": 240,
+        "w": 380,
+        "h": 190
+      }
+    }
+  ]
 }

@@ -6,7 +6,8 @@ First-time setup:
     python3 narration.py setkey              # paste your API key, hidden
     python3 narration.py setvoice "Brian"    # pick the narrator by name or id
     python3 narration.py speak --only s9     # one short line, to check the read
-    python3 narration.py speak               # the whole script
+    python3 narration.py speak               # the whole English script
+    python3 narration.py speak --lang es     # the Spanish script, into audio/es/
 
 Also useful:
 
@@ -65,10 +66,21 @@ def load_config():
     return json.loads(CONFIG.read_text())
 
 
-def scene_items(config, only=None):
+def scenes_for(config, lang="en"):
+    key = "scenes_es" if lang == "es" else "scenes"
+    scenes = config.get(key) or {}
+    if lang == "es" and not scenes:
+        sys.exit("No Spanish script found. Add a scenes_es object in narration.json.")
+    return scenes
+
+
+def scene_items(config, only=None, lang="en"):
     """Scene lines in order, optionally filtered to --only ids."""
-    scenes = config.get("scenes") or {}
-    keys = sorted(scenes, key=lambda k: int(re.sub(r"\D", "", k) or 0))
+    scenes = scenes_for(config, lang)
+    def scene_key(k):
+        m = re.match(r"^s(\d+)([a-z]*)$", k)
+        return (int(m.group(1)), m.group(2) or "") if m else (999, k)
+    keys = sorted(scenes, key=scene_key)
     if only:
         wanted = {s.strip() for s in only.split(",") if s.strip()}
         missing = wanted - set(keys)
@@ -87,16 +99,28 @@ def explain_http_error(response):
         429: "Rate limited. Wait a moment and retry.",
     }
     detail = ""
+    status = ""
     try:
         body = response.json()
         detail = body.get("detail", body)
         if isinstance(detail, dict):
+            status = detail.get("status", "")
             detail = detail.get("message") or json.dumps(detail)
     except ValueError:
         detail = response.text[:400]
-    return "HTTP {}: {}\n{}".format(
-        response.status_code, hints.get(response.status_code, ""), detail
-    ).strip()
+
+    # A scoped key authenticates fine but is refused per-endpoint. That is a
+    # different problem from a bad key, and the generic 401 hint sends you
+    # hunting for a typo that isn't there.
+    if status == "missing_permissions":
+        hint = ("The key itself is fine — it just isn't allowed to do this.\n"
+                "In ElevenLabs: profile icon -> API Keys -> edit the key, and\n"
+                "enable at least 'Text to Speech'. 'Voices: Read' and\n"
+                "'User: Read' also let this script list voices and show credits.")
+    else:
+        hint = hints.get(response.status_code, "")
+
+    return "HTTP {}: {}\n{}".format(response.status_code, hint, detail).strip()
 
 
 def get(path, headers, **params):
@@ -219,7 +243,8 @@ def cmd_models(args):
 
 def cmd_speak(args):
     config = load_config()
-    items = scene_items(config, args.only)
+    lang = args.lang if args.lang in ("en", "es") else "en"
+    items = scene_items(config, args.only, lang=lang)
     if not items:
         sys.exit("No narration text found in narration.json.")
 
@@ -253,7 +278,8 @@ def cmd_speak(args):
     output_format = config.get("output_format") or "mp3_44100_128"
     settings = config.get("voice_settings") or {}
 
-    AUDIO_DIR.mkdir(exist_ok=True)
+    out_dir = AUDIO_DIR / "es" if lang == "es" else AUDIO_DIR
+    out_dir.mkdir(parents=True, exist_ok=True)
     written = []
 
     for scene_id, text in items:
@@ -269,12 +295,13 @@ def cmd_speak(args):
             print("failed")
             sys.exit(explain_http_error(response))
 
-        dest = AUDIO_DIR / "{}.mp3".format(scene_id)
+        dest = out_dir / "{}.mp3".format(scene_id)
         dest.write_bytes(response.content)
         written.append(dest)
         print("saved {} ({:.0f} KB)".format(dest.name, dest.stat().st_size / 1024))
 
-    print("\n{} clip(s) in {}/".format(len(written), AUDIO_DIR.name))
+    where = "audio/es" if lang == "es" else AUDIO_DIR.name
+    print("\n{} clip(s) in {}/".format(len(written), where))
     print("Open locale-driver-training.html — it picks up the audio and retimes each")
     print("scene to match. Run `python3 narration.py embed` for a single shareable file.")
 
@@ -284,15 +311,23 @@ def cmd_embed(args):
     if not SOURCE_HTML.exists():
         sys.exit("Missing {}".format(SOURCE_HTML.name))
 
-    clips = sorted(AUDIO_DIR.glob("s*.mp3"),
-                   key=lambda p: int(re.sub(r"\D", "", p.stem) or 0)) if AUDIO_DIR.exists() else []
-    if not clips:
-        sys.exit("No audio found. Run `python3 narration.py speak` first.")
-
+    config = load_config()
     encoded = {}
-    for clip in clips:
-        encoded[clip.stem] = "data:audio/mpeg;base64," + base64.b64encode(
-            clip.read_bytes()).decode("ascii")
+    for lang, key in (("en", "scenes"), ("es", "scenes_es")):
+        scenes = set(config.get(key) or {})
+        folder = AUDIO_DIR / "es" if lang == "es" else AUDIO_DIR
+        clips = []
+        if folder.exists():
+            clips = [p for p in folder.glob("s*.mp3") if p.stem in scenes]
+            clips.sort(key=lambda p: int(re.sub(r"\D", "", p.stem) or 0))
+        if clips:
+            encoded[lang] = {
+                clip.stem: "data:audio/mpeg;base64," + base64.b64encode(
+                    clip.read_bytes()).decode("ascii")
+                for clip in clips
+            }
+    if not encoded:
+        sys.exit("No audio found. Run `python3 narration.py speak` first.")
 
     html = SOURCE_HTML.read_text()
     marker = "/*__AUDIO_MANIFEST__*/"
@@ -302,8 +337,9 @@ def cmd_embed(args):
     html = html.replace(marker, "window.__AUDIO__ = " + json.dumps(encoded) + ";", 1)
     EMBED_HTML.write_text(html)
 
+    nclips = sum(len(v) for v in encoded.values())
     print("Embedded {} clip(s) -> {} ({:.1f} MB)".format(
-        len(clips), EMBED_HTML.name, EMBED_HTML.stat().st_size / 1e6))
+        nclips, EMBED_HTML.name, EMBED_HTML.stat().st_size / 1e6))
     print("That file is fully self-contained — no audio/ folder needed.")
 
 
@@ -329,6 +365,8 @@ def main():
     speak.add_argument("--voice", help="voice name or id, overriding narration.json")
     speak.add_argument("--model", help="override model_id from narration.json")
     speak.add_argument("--only", help="comma-separated scene ids, e.g. s6,s7")
+    speak.add_argument("--lang", choices=("en", "es"), default="en",
+                       help="English (audio/) or Spanish (audio/es/)")
     speak.add_argument("--dry-run", action="store_true",
                        help="show character counts and cost, generate nothing")
     speak.set_defaults(func=cmd_speak)

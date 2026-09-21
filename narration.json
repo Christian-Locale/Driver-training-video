@@ -1,40 +1,53 @@
 {
   "_readme": [
-    "Voiceover script for locale-driver-training.html — edit the text freely.",
+    "Voiceover script for the driver-training animation — edit the text freely.",
     "Run `python3 narration.py voices` to pick a voice, put its id in voice_id below,",
-    "then `python3 narration.py speak` to generate audio/s1.mp3 ... audio/s9.mp3.",
+    "then `python3 narration.py speak` to generate audio/s0.mp3 ... audio/s9.mp3.",
+    "`python3 narration.py speak --lang es` writes the Spanish clips to audio/es/.",
     "Scene durations in the animation follow these clips automatically."
   ],
-
-  "voice_name": "",
-  "voice_id": "",
+  "voice_name": "UgBBYS2sOqTuMpoF3BR0",
+  "voice_id": "UgBBYS2sOqTuMpoF3BR0",
   "model_id": "eleven_multilingual_v2",
   "output_format": "mp3_44100_128",
-
   "voice_settings": {
     "stability": 0.45,
     "similarity_boost": 0.78,
     "style": 0.15,
     "use_speaker_boost": true
   },
-
   "scenes": {
-    "s1": "Every route starts with your DSP. Before your shift, they'll send you a route number. That number is how the warehouse knows which orders are yours, so keep it handy — dispatch is going to ask for it the moment you walk in.",
-
+    "s0": "Thank you for driving with us. Welcome to our driver training video!",
+    "s0b": "You are driving for a prepped meal service. Meals are delivered in glass jars — that's why every bag has to be handled with care. This video will walk you through how a route works, from start to finish.",
+    "s1": "At the start of your shift, you will be sent a route number. That number is how the warehouse knows which orders are yours, so keep it handy — dispatch is going to ask for it the moment you walk in.",
     "s2": "When you get to the warehouse, head for the roll-up door and find the on-site dispatcher. Pull up the check-in code on your phone, show it to them, and give them your route number.",
-
-    "s3": "Dispatch will pull your rack and wheel it out to you. It's a rolling shelf unit — four shelves, holding around twenty insulated bags. That rack is your entire route.",
-
-    "s4": "Before you take it anywhere, count it. Go shelf by shelf and check every single bag. If something is missing, this is the moment to say so — not after you've already left the warehouse.",
-
-    "s5": "Let dispatch know you're heading out, then load your car with a bit of care. Bags lie flat and stay put. Don't stack orders on top of each other, and don't let them slide around back there. That's how food arrives damaged.",
-
-    "s6": "Now the part that matters most: the label. Look at the bottom-left corner. That's your route number and your stop number — which bag this is, and the order you drop it in. And up in the top-right, you'll see your DSP name on a colored background. Remember that color.",
-
-    "s7": "At the stop, don't guess — read the labels. Find the bag whose route and stop number match where you are. Then check whether it's one bag or several. If two or more are zip-tied together, that's a single multi-bag order. Cut the tie and carry all of them in together. Never split an order.",
-
-    "s8": "Hand the order to the customer and take your delivery photo. Then collect the empties — jars and bags that go back to the warehouse. This is where that top-right color earns its keep. The week color tells you at a glance what's a live order for this week and what's a return from a previous one. Keep those two apart, and you'll never hand somebody the wrong bag.",
-
-    "s9": "And that's a route, start to finish. Welcome to Locale."
+    "s3": "Dispatch will pull your rack — that's your entire route. Check every bag, shelf by shelf, and read the label on each one. If you leave a bag at the warehouse without letting dispatch know it's missing from your route, that will hurt your driver score, which can affect how you get future routes.",
+    "s5": "Let dispatch know you're heading out, then load your car with care. Bags lie flat and stay put. Don't stack orders on top of each other, and don't let them slide around. If the jars in a bag arrive broken, you will be held accountable.",
+    "s6": "That's the label you're checking on every bag. Bottom left is your route number and stop number — that's the order you'll drop off the bags. Top right is the DSP color. That color rotates every week, so you always know which week is currently active.",
+    "s6b": "Then you are on the road — first stop of the route. Drive safe, and when you arrive check the stop before you grab a bag.",
+    "s6c": "Review any delivery instructions the customer has left for you.",
+    "s7": "When you arrive at your destination, verify the order on the label matches the order on your phone before you grab it. If bags are zip-tied together, that means it's a multi-bag order — release the ties and deliver both bags to the customer together. The ties are reusable, you can keep them and return them to the warehouse.",
+    "s7b": "Walk up, ring the doorbell, and hand the bag to the customer. A clean handoff is the goal whenever someone is home.",
+    "s7c": "If nobody answers, do not leave the bag in the sun. Put it in a shaded, safe spot — under the porch or beside the door — and take your delivery photo so the drop is recorded.",
+    "s8": "Once the bag is dropped off, look around the area for empty bags and jars — customers are expecting you to take these back every week! When you collect them, open the bag and take a photo of what's inside. Then record the number of jars you picked up in the notes section on your app.",
+    "s8b": "At the end of your route, return all the empty bags and jars to the warehouse.",
+    "s9": "And that's a route, start to finish. You're ready to go."
+  },
+  "scenes_es": {
+    "s0": "Gracias por manejar con nosotros. ¡Bienvenido a nuestro video de capacitación!",
+    "s0b": "Manejas para un servicio de comidas preparadas. Las comidas se entregan en frascos de vidrio — por eso cada bolsa hay que manejarla con cuidado. Este video te va a explicar cómo funciona una ruta, de principio a fin.",
+    "s1": "Al empezar tu turno, te van a enviar un número de ruta. Ese número es como el almacén sabe cuáles pedidos son tuyos, así que tenlo a la mano — despacho te lo va a pedir en cuanto entres.",
+    "s2": "Cuando llegues al almacén, ve a la puerta enrollable y busca al despachador. Abre el código de registro en tu teléfono, muéstraselo, y dales tu número de ruta.",
+    "s3": "Despacho va a sacar tu rack — esa es tu ruta completa. Revisa cada bolsa, estante por estante, y lee la etiqueta de cada una. Si dejas una bolsa en el almacén sin avisarle a despacho que falta en tu ruta, eso baja tu puntuación de conductor, y esa puntuación puede afectar cómo te asignan rutas en el futuro.",
+    "s5": "Avisa a despacho que sales, y carga el carro con cuidado. Las bolsas van planas y fijas. No apiles pedidos uno encima del otro, y no dejes que se deslicen. Si los frascos de una bolsa llegan rotos, tú eres responsable.",
+    "s6": "Esa es la etiqueta que revisas en cada bolsa. Abajo a la izquierda está tu número de ruta y de parada — ese es el orden en que entregas las bolsas. Arriba a la derecha está el color DSP. Ese color cambia cada semana, para que siempre sepas cuál semana está activa.",
+    "s6b": "Ahora estás en camino — primera parada de la ruta. Maneja con cuidado, y cuando llegues verifica la parada antes de tomar una bolsa.",
+    "s6c": "Revisa las instrucciones de entrega que el cliente haya dejado para ti.",
+    "s7": "Cuando llegues a tu destino, verifica que el pedido en la etiqueta coincida con el pedido en tu teléfono antes de tomarla. Si las bolsas están atadas con cincho, es un pedido de varias bolsas — suelta los cinchos y entrega ambas bolsas juntas. Los cinchos se reutilizan, puedes guardarlos y devolverlos al almacén.",
+    "s7b": "Acércate, toca el timbre, y entrega la bolsa al cliente. El objetivo es una entrega en mano cuando hay alguien en casa.",
+    "s7c": "Si nadie abre, no dejes la bolsa al sol. Ponla en un lugar sombreado y seguro — debajo del porche o junto a la puerta — y toma la foto de entrega para que quede registrada.",
+    "s8": "Cuando dejes la bolsa, busca bolsas y frascos vacíos por el área — ¡los clientes esperan que te los lleves de vuelta cada semana! Cuando los recojas, abre la bolsa y toma una foto de lo que hay adentro. Luego anota cuántos frascos recogiste en la sección de notas de tu app.",
+    "s8b": "Al final de tu ruta, regresa todas las bolsas y frascos vacíos al almacén.",
+    "s9": "Y así es una ruta, de principio a fin. Ya estás listo."
   }
 }
