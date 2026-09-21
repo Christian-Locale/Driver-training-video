@@ -87,6 +87,14 @@
     from{transform:translateX(150px) scale(1.06)}
     to  {transform:none}
   }
+  @keyframes sceneFadeIn{
+    from{opacity:0}
+    to  {opacity:1}
+  }
+  @keyframes sceneFadeOut{
+    from{opacity:1}
+    to  {opacity:0}
+  }
 
   /* ---------- Caption bar ---------- */
   .capbar{
@@ -595,7 +603,7 @@
       transform:none;
     }
     .scene.is-active{
-      animation:none;
+      animation:sceneFadeIn .7s linear both;
       transform:none;
     }
     .scene.is-warm{
@@ -605,8 +613,8 @@
       transform:none;
     }
     .scene.is-active.is-leaving{
-      opacity:0;
-      visibility:hidden;
+      animation:sceneFadeOut .7s linear both;
+      visibility:visible;
       transform:none;
     }
     .scene.is-active .cam{
@@ -730,10 +738,10 @@
     .nav .btn{flex:1 1 0;justify-content:center;min-height:44px;font-size:14px}
     .langpick{
       position:absolute;
-      inset:0;
+      inset:auto 0 calc(68px + env(safe-area-inset-bottom, 0px)) 0;
       z-index:5;
       flex:none;
-      align-items:center;
+      align-items:flex-end;
       justify-content:center;
       padding:0 20px;
     }

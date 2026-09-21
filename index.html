@@ -695,10 +695,10 @@
     .nav .btn{flex:1 1 0;justify-content:center;min-height:44px;font-size:14px}
     .langpick{
       position:absolute;
-      inset:0;
+      inset:auto 0 calc(68px + env(safe-area-inset-bottom, 0px)) 0;
       z-index:5;
       flex:none;
-      align-items:center;
+      align-items:flex-end;
       justify-content:center;
       padding:0 20px;
     }
