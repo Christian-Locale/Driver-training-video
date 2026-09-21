@@ -581,11 +581,12 @@
     .scene.is-active .glow,
     .scene.is-active .dashmove,
     .eye{animation:none}
-    /* Whip-cut + flash drops frames on phones. Fade in place, and keep
-       the next scene laid out (is-warm) so opacity can interpolate. */
+    /* Dissolve between complete frames. Entrance beats start from
+       opacity 0 / off-canvas, so playing them during the fade makes
+       the incoming shot look empty, then pop. */
     .scene{
       transform:none;
-      transition:opacity .42s ease, visibility .42s ease;
+      transition:opacity .7s ease, visibility .7s ease;
     }
     .scene.is-leaving{
       opacity:0;
@@ -601,6 +602,18 @@
       opacity:0;
       visibility:hidden;
       transform:none;
+    }
+    .scene.is-active.is-leaving{
+      opacity:0;
+      visibility:hidden;
+      transform:none;
+    }
+    .scene.is-active .cam{
+      animation:none;
+      transform:scale(1.05);
+    }
+    .scene.is-active *:not(.cam):not(.breathe):not(.breathe-s):not(.sway):not(.sway-s):not(.flutter):not(.ph){
+      animation:none!important;
     }
     .cutflash{display:none}
   }
@@ -628,36 +641,30 @@
   }
 
   @media (max-width:900px) and (orientation:portrait){
-    html,body{width:100%;max-width:100%}
-    body{
-      display:block;
-      padding:
-        env(safe-area-inset-top)
-        env(safe-area-inset-right)
-        env(safe-area-inset-bottom)
-        env(safe-area-inset-left);
-    }
+    html,body{width:100%;max-width:100%;overflow:hidden}
+    body{display:block;padding:0}
     .stage{
       width:100%;
       height:100%;
+      height:100dvh;
       aspect-ratio:auto;
-      display:flex;
-      flex-direction:column;
+      display:block;
       box-shadow:none;
-      background:transparent;
-      container-type:normal;
+      background:var(--bg);
+      container-type:size;
+      overflow:hidden;
     }
     .screen{
-      position:relative;
-      inset:auto;
-      width:100%;
-      flex:0 0 auto;
-      aspect-ratio:16/9;
+      position:absolute;
+      inset:0;
+      width:auto;
+      height:auto;
       max-height:none;
-      margin-inline:0;
+      aspect-ratio:auto;
+      margin:0;
+      flex:none;
       background:var(--bg);
       overflow:hidden;
-      container-type:size;
     }
     .canvas,.vignette,.cutflash,.filmbar{
       position:absolute;inset:0;width:100%;height:100%;
@@ -668,57 +675,65 @@
       gap:8px;
     }
     .dots{
-      position:relative;
-      left:auto;right:auto;bottom:auto;
-      padding:10px 12px 0;
+      position:absolute;
+      left:0;right:0;bottom:calc(132px + env(safe-area-inset-bottom, 0px));
+      padding:0;
       gap:0;
       opacity:1;
     }
     .stage.is-idle .dots{opacity:1}
     .capbar{
-      position:relative;
-      left:auto;right:auto;bottom:auto;
-      flex:0 0 auto;
+      position:absolute;
+      left:0;right:0;bottom:0;
+      flex:none;
+      min-height:0;
+      transform:none;
       display:flex;
       flex-direction:column;
       align-items:flex-start;
-      justify-content:flex-start;
-      gap:8px;
-      padding:12px 20px 8px;
-      background:#15281F;
+      justify-content:flex-end;
+      gap:6px;
+      padding:56px 16px calc(72px + env(safe-area-inset-bottom, 0px)) 16px;
+      background:linear-gradient(180deg,rgba(27,59,44,0) 0%,rgba(21,40,31,.88) 52%,#15281F 100%);
+      overflow:visible;
     }
     .capbar.is-hidden{
       transform:none;
       opacity:0;
-      flex:0 0 0;
+      visibility:hidden;
+      pointer-events:none;
+      flex:none;
       min-height:0;
-      padding:0;
-      overflow:hidden;
+      padding:56px 16px calc(72px + env(safe-area-inset-bottom, 0px)) 16px;
+      overflow:visible;
     }
-    .step{padding:0;opacity:.85}
+    .step{padding:0;opacity:.85;font-size:11px}
     .caption{
       font-size:1.05rem;
-      line-height:1.4;
+      line-height:1.35;
       margin:0;
-      max-width:40rem;
+      max-width:100%;
+      flex:none;
     }
     .nav{
-      position:relative;
-      right:auto;bottom:auto;
-      width:100%;
+      position:absolute;
+      left:12px;right:12px;
+      bottom:max(10px, env(safe-area-inset-bottom, 0px));
+      width:auto;
       justify-content:stretch;
       gap:10px;
-      padding:8px 16px 14px;
-      background:#15281F;
+      padding:0;
+      margin:0;
+      background:transparent;
     }
-    .nav .btn{flex:1 1 0;justify-content:center}
+    .nav .btn{flex:1 1 0;justify-content:center;min-height:44px;font-size:14px}
     .langpick{
-      position:relative;
-      inset:auto;
-      flex:0 0 auto;
-      align-items:center;
+      position:absolute;
+      inset:0;
+      flex:none;
+      align-items:flex-end;
       justify-content:center;
-      padding:16px 20px 8px;
+      padding:16px 20px calc(88px + env(safe-area-inset-bottom, 0px));
     }
     .langpick-row{
       flex-direction:column;
@@ -726,10 +741,6 @@
       gap:12px;
     }
     .lang-btn{width:100%;max-width:none;flex:none}
-    .stage.is-picking .capbar,
-    .stage.is-picking .dots{
-      display:none;
-    }
     .stage.is-idle .controls{opacity:1}
   }
 
@@ -756,7 +767,7 @@
 
 <div class="stage is-picking" id="stage">
   <div class="screen">
-  <svg class="canvas" viewBox="0 0 1600 900" role="img" aria-label="Driver training animation">
+  <svg class="canvas" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Driver training animation">
 
     <!-- ================= REUSABLE DEFINITIONS ================= -->
     <defs>
@@ -2747,6 +2758,13 @@
     if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
 
     const nextId = (i + 1 < SCENES.length) ? SCENES[i + 1].id : null;
+    const active = document.getElementById(scene.id);
+    const ms = durationFor(i);
+    const pace = ms / scene.dur;
+    /* Set timing before is-active so cam/beats do not start, then restart. */
+    active.style.setProperty("--camdur", ms + "ms");
+    active.style.setProperty("--pace", pace.toFixed(4));
+
     SCENES.forEach(function(s){
       const el = document.getElementById(s.id);
       const on = s.id === scene.id;
@@ -2757,12 +2775,16 @@
           el.classList.add("is-warm");
           void el.getBoundingClientRect();
         }
+        if (from === i){
+          el.classList.remove("is-active");
+          void el.getBoundingClientRect();
+        }
         el.classList.remove("is-warm");
         el.classList.add("is-active");
       } else if (el.classList.contains("is-active")){
-        el.classList.remove("is-active");
         el.classList.add("is-leaving");
-        setTimeout(function(){ el.classList.remove("is-leaving"); }, LITE ? 450 : 400);
+        if (!LITE) el.classList.remove("is-active");
+        setTimeout(function(){ el.classList.remove("is-leaving", "is-active"); }, LITE ? 750 : 400);
       } else if (LITE && s.id === nextId){
         el.classList.remove("is-leaving");
         el.classList.add("is-warm");
@@ -2770,19 +2792,6 @@
         el.classList.remove("is-warm");
       }
     });
-
-    const ms = durationFor(i);
-    const pace = ms / scene.dur;
-    const active = document.getElementById(scene.id);
-
-    /* Camera lasts the whole clip. --pace stretches authored beat
-       delays so action keeps landing with the voice instead of
-       finishing in the first few seconds and holding. */
-    active.style.setProperty("--camdur", ms + "ms");
-    active.style.setProperty("--pace", pace.toFixed(4));
-
-    // Restart CSS animations cleanly on re-entry.
-    void active.getBoundingClientRect();
 
     if (slangEl) slangEl.classList.remove("is-active", "is-leaving");
 
