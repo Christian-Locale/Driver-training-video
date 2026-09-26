@@ -72,6 +72,8 @@ def check(html: str, name: str):
         errors.append("mobile must freeze entrance beats so dissolves are between complete frames")
     if ".scene.is-active.cam" not in block or "scale(1.05)" not in block:
         errors.append("mobile camera must hold a shared scale so the dissolve does not zoom")
+    if ".flash{opacity:0" not in squeezed:
+        errors.append("flash overlay must rest at opacity 0 so animation:none does not white-out slides 12-13")
     if errors:
         print(name + ":")
         for e in errors:
