@@ -216,9 +216,8 @@
      Start can be the same Continue control used for the rest of the video. */
   .langpick{
     position:absolute;inset:0;z-index:2;
-    display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
-    gap:2.4cqh;
-    padding-bottom:14.6cqh;
+    display:flex;align-items:flex-end;justify-content:center;
+    padding-bottom:22cqh;
     pointer-events:none;
     transition:opacity .4s ease,visibility .4s ease;
   }
@@ -245,25 +244,9 @@
     color:#1B3B2C;
     border-color:#8FC3A3;
   }
-  /* Volume reminder. Hidden until a language is picked, then fades in
-     under the buttons so it's the last thing read before Start. */
-  .volnote{
-    display:flex;align-items:center;gap:1cqw;
-    min-height:5cqh;
-    padding:1.1cqh 2.2cqw;
-    border-radius:100px;
-    background:rgba(21,40,31,.6);
-    border:1.5px solid rgba(143,195,163,.45);
-    color:#F4F1E8;
-    font-family:var(--font-display);
-    font-size:1.25cqw;font-weight:700;letter-spacing:.04em;
-    opacity:0;transform:translateY(10px);
-    transition:opacity .45s ease,transform .45s ease;
-  }
-  .langpick.has-lang .volnote{opacity:1;transform:none}
-  .volnote svg{width:2.4cqw;height:2.4cqw;flex:0 0 auto;color:#8FC3A3;overflow:visible}
-  .langpick.has-lang .volnote .wave{animation:volWave 1.5s ease-in-out infinite}
-  .langpick.has-lang .volnote .wave-2{animation-delay:.25s}
+  /* Volume reminder on the intro slide: sound waves pulse beside the speaker. */
+  .scene.is-active .vwave{animation:volWave 1.5s ease-in-out calc(var(--d,0s) * var(--pace,1)) infinite}
+  .scene.is-active .vwave-2{animation-delay:calc((var(--d,0s) + .25s) * var(--pace,1))}
   @keyframes volWave{0%,100%{opacity:.25}50%{opacity:1}}
   .stage.is-picking .controls,
   .stage.is-picking .dots,
@@ -720,12 +703,6 @@
       min-height:48px;
       letter-spacing:.06em;
     }
-    .volnote{
-      font-size:max(13px,1.25cqw);
-      gap:max(8px,1cqw);
-      padding:max(8px,1.1cqh) max(14px,2.2cqw);
-    }
-    .volnote svg{width:max(20px,2.4cqw);height:max(20px,2.4cqw)}
     .capbar{padding-right:max(28cqw, 11rem)}
   }
 
@@ -821,10 +798,8 @@
       inset:auto 0 calc(68px + env(safe-area-inset-bottom, 0px)) 0;
       z-index:5;
       flex:none;
-      flex-direction:column;
-      align-items:center;
-      justify-content:flex-end;
-      gap:14px;
+      align-items:flex-end;
+      justify-content:center;
       padding:0 20px;
     }
     .langpick-row{
@@ -832,17 +807,6 @@
       width:min(100%, 280px);
       gap:12px;
     }
-    .volnote{
-      font-size:14px;
-      gap:10px;
-      padding:10px 16px;
-      max-width:min(100%, 380px);
-      text-align:left;
-      line-height:1.25;
-      background:#1B3B2C;
-      border-color:#8FC3A3;
-    }
-    .volnote svg{width:22px;height:22px}
     .lang-btn{
       width:100%;
       max-width:none;
@@ -1252,6 +1216,18 @@
       <g class="fade" style="--d:2.9s">
         <text data-i18n="s0.sub" x="800" y="588" font-size="22" font-weight="700" fill="#8FC3A3" text-anchor="middle" letter-spacing="1.6">
           Welcome to our driver training video!
+        </text>
+      </g>
+      <!-- Volume reminder -->
+      <g class="rise" style="--d:3.6s">
+        <rect x="520" y="650" width="560" height="60" rx="30" fill="#15281F" stroke="#8FC3A3" stroke-width="2" opacity=".92"/>
+        <g transform="translate(556,664) scale(1.35)" fill="#8FC3A3" stroke="#8FC3A3">
+          <path d="M3 9.5v5a1 1 0 0 0 1 1h3.2l4.6 3.7a.8.8 0 0 0 1.3-.6V5.4a.8.8 0 0 0-1.3-.6L7.2 8.5H4a1 1 0 0 0-1 1z" stroke="none"/>
+          <path class="vwave" style="--d:3.6s" d="M15.6 8.6a4.8 4.8 0 0 1 0 6.8" fill="none" stroke-width="2" stroke-linecap="round"/>
+          <path class="vwave vwave-2" style="--d:3.6s" d="M18.4 5.8a8.8 8.8 0 0 1 0 12.4" fill="none" stroke-width="2" stroke-linecap="round"/>
+        </g>
+        <text data-i18n="volume" x="822" y="688" font-size="23" font-weight="700" fill="#F4F1E8" text-anchor="middle">
+          Make sure your volume is turned up
         </text>
       </g>
      </g>
@@ -2215,14 +2191,6 @@
       <button type="button" class="lang-btn" data-lang="en">English</button>
       <button type="button" class="lang-btn" data-lang="es">Español</button>
     </div>
-    <div class="volnote" id="volnote" role="status" aria-live="polite">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M3 9.5v5a1 1 0 0 0 1 1h3.2l4.6 3.7a.8.8 0 0 0 1.3-.6V5.4a.8.8 0 0 0-1.3-.6L7.2 8.5H4a1 1 0 0 0-1 1z" fill="currentColor"/>
-        <path class="wave wave-1" d="M15.6 8.6a4.8 4.8 0 0 1 0 6.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        <path class="wave wave-2" d="M18.4 5.8a8.8 8.8 0 0 1 0 12.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      </svg>
-      <span data-i18n="volume">Make sure your volume is turned up</span>
-    </div>
   </div>
 
   <div class="dots" id="dots"></div>
@@ -3175,7 +3143,6 @@
     document.querySelectorAll(".lang-btn").forEach(function(btn){
       btn.classList.toggle("is-on", btn.getAttribute("data-lang") === next);
     });
-    langpick.classList.add("has-lang");
     applyLang();
     if (audioLang !== next){
       audioReady = false;
@@ -3192,7 +3159,6 @@
     picking = true;
     stage.classList.add("is-picking");
     langpick.classList.remove("is-gone");
-    langpick.classList.toggle("has-lang", !!lang);
     silence();
     clearTimeout(timer);
     if (progRaf){ cancelAnimationFrame(progRaf); progRaf = null; }
