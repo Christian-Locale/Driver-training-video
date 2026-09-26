@@ -609,7 +609,7 @@
     .scene.is-warm{
       display:inline;
       opacity:0;
-      visibility:hidden;
+      visibility:visible;
       transform:none;
     }
     .scene.is-active.is-leaving{
@@ -2798,6 +2798,10 @@
           void el.getBoundingClientRect();
         }
         el.classList.remove("is-warm");
+        if (LITE && !cold){
+          el.classList.remove("is-active");
+          void el.getBoundingClientRect();
+        }
         el.classList.add("is-active");
       } else if (el.classList.contains("is-active")){
         el.classList.add("is-leaving");

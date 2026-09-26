@@ -11,8 +11,9 @@ audio/
 *.png
 *.jpg
 
-# Reference art is a source file, not generated output
+# Reference art and real warehouse photos are source files, not generated output
 !reference/**
+!photos/**
 
 # Python
 __pycache__/

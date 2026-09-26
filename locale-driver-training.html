@@ -281,6 +281,53 @@
   @keyframes inR{from{opacity:0;transform:translateX(90px)}to{opacity:1;transform:none}}
 
   .pop,.wheel,.pulse,.wobble,.zip-tie,.lever,.thumb-press,.jar-fly,.star-drop,.fill-up,.lid-drop{transform-box:fill-box;transform-origin:center}
+  /*photos*/
+  /* Real warehouse photos pinned into the illustrated scene. They ride
+     the same .pop entrance and camera as everything else; tapping one
+     opens it full-size so it is legible on a phone's letterboxed film. */
+  .photo{cursor:pointer}
+  .photo .photo-frame{stroke:#DCE6D8;stroke-width:1.5}
+  .photo:hover .photo-frame{stroke:#4C9A72;stroke-width:2.5}
+  .photobox{
+    position:absolute;inset:0;z-index:6;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+    padding:max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+    background:rgba(21,40,31,.94);
+    cursor:zoom-out;
+    animation:photoboxIn .22s ease both;
+  }
+  .photobox[hidden]{display:none}
+  @keyframes photoboxIn{from{opacity:0}to{opacity:1}}
+  .photobox img{
+    display:block;
+    max-width:min(92%, 560px);
+    max-height:min(74%, 74dvh);
+    width:auto;height:auto;
+    border-radius:14px;
+    box-shadow:0 30px 70px rgba(0,0,0,.5);
+    background:#FBFAF6;
+    padding:6px;
+    box-sizing:border-box;
+  }
+  .photobox-cap{
+    margin:0;
+    font-family:var(--font-display);
+    font-size:max(13px, 1.1cqw);letter-spacing:.16em;font-weight:800;
+    color:#8FC3A3;text-align:center;
+  }
+  .photobox-hint{
+    margin:0;
+    font-size:max(12px, .9cqw);font-weight:600;
+    color:rgba(244,241,232,.7);text-align:center;
+  }
+  .photobox-close{
+    position:absolute;top:max(12px, env(safe-area-inset-top));right:14px;
+    width:44px;height:44px;border-radius:50%;border:1.5px solid rgba(143,195,163,.5);
+    background:rgba(27,59,44,.8);color:#F4F1E8;
+    font-size:26px;line-height:1;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  /*/photos*/
   .fill-up,.lid-drop{transform-origin:50% 100%}
   .glance{transform-box:fill-box;transform-origin:50% 100%}
 
@@ -609,7 +656,7 @@
     .scene.is-warm{
       display:inline;
       opacity:0;
-      visibility:hidden;
+      visibility:visible;
       transform:none;
     }
     .scene.is-active.is-leaving{
@@ -1395,6 +1442,22 @@
               stroke-linecap="round" stroke-linejoin="round"/>
         <text data-i18n="s2.in" x="1188" y="267" font-size="21" font-weight="800" fill="#FBFAF6" text-anchor="middle" letter-spacing="1.4">CHECKED IN</text>
       </g>
+      <!--photos-->
+      <!-- Real photo: the roll-up door drivers are heading for -->
+      <g class="pop photo" style="--d:1.6s" data-photo="roll-up-door">
+        <g transform="rotate(-2 232 500)">
+          <g filter="url(#softsm)"><rect class="photo-frame" x="112" y="330" width="240" height="341" rx="14" fill="#FBFAF6"/></g>
+          <clipPath id="phclip-door"><rect x="120" y="338" width="224" height="299" rx="10"/></clipPath>
+          <image href="photos/roll-up-door.jpg" x="120" y="338" width="224" height="299" preserveAspectRatio="xMidYMid slice" clip-path="url(#phclip-door)"/>
+          <g transform="translate(326,356)">
+            <circle r="13" fill="#2F6B4F"/>
+            <circle cx="-1.5" cy="-1.5" r="4.6" fill="none" stroke="#FBFAF6" stroke-width="2"/>
+            <path d="M2,2 l4.5,4.5" stroke="#FBFAF6" stroke-width="2.4" stroke-linecap="round"/>
+          </g>
+          <text data-i18n="photo.door" x="232" y="659" font-size="12" font-weight="800" fill="#7C8C81" text-anchor="middle" letter-spacing="1.6">THE ROLL-UP DOOR</text>
+        </g>
+      </g>
+      <!--/photos-->
      </g>
     </g>
 
@@ -1448,6 +1511,22 @@
         <text data-i18n="s3.skip2" x="1120" y="526" font-size="16" font-weight="600" fill="#8FC3A3">and it can affect how you get</text>
         <text data-i18n="s3.skip3" x="1120" y="552" font-size="16" font-weight="600" fill="#8FC3A3">future routes.</text>
       </g>
+      <!--photos-->
+      <!-- Real photo: a loaded rack, i.e. one whole route -->
+      <g class="pop photo" style="--d:3s" data-photo="route-rack">
+        <g transform="rotate(2 225 495)">
+          <g filter="url(#softsm)"><rect class="photo-frame" x="100" y="318" width="250" height="354" rx="14" fill="#FBFAF6"/></g>
+          <clipPath id="phclip-rack"><rect x="108" y="326" width="234" height="312" rx="10"/></clipPath>
+          <image href="photos/route-rack.jpg" x="108" y="326" width="234" height="312" preserveAspectRatio="xMidYMid slice" clip-path="url(#phclip-rack)"/>
+          <g transform="translate(326,342)">
+            <circle r="13" fill="#2F6B4F"/>
+            <circle cx="-1.5" cy="-1.5" r="4.6" fill="none" stroke="#FBFAF6" stroke-width="2"/>
+            <path d="M2,2 l4.5,4.5" stroke="#FBFAF6" stroke-width="2.4" stroke-linecap="round"/>
+          </g>
+          <text data-i18n="photo.rack" x="225" y="660" font-size="12" font-weight="800" fill="#7C8C81" text-anchor="middle" letter-spacing="1.6">YOUR RACK — ONE ROUTE</text>
+        </g>
+      </g>
+      <!--/photos-->
 
       <!-- Bridge into the label slide: checking an order means reading this. -->
       <rect class="pulse" style="--d:9.2s" x="528" y="356" width="56" height="62" rx="8"
@@ -1761,6 +1840,36 @@
           <text data-i18n="s7.tie3" x="1090" y="486" font-size="19" font-weight="600" fill="#42544A">are one order — never split them.</text>
           <text data-i18n="s7.tie4" x="1090" y="520" font-size="17" font-weight="700" fill="#2F6B4F">The tie is reusable. Keep it and return it to the warehouse.</text>
         </g>
+        <!--photos-->
+        <!-- Real photos: what a zip-tied multi-bag order looks like, then the released tie -->
+        <!-- Kept below y=100: phones in landscape keep PAUSE / REPLAY pinned over that corner. -->
+        <g class="pop photo" style="--d:8.6s" data-photo="zip-tie-tied">
+          <g transform="rotate(-2 1182 231)">
+            <g filter="url(#softsm)"><rect class="photo-frame" x="1096" y="106" width="172" height="250" rx="14" fill="#FBFAF6"/></g>
+            <clipPath id="phclip-tied"><rect x="1104" y="114" width="156" height="208" rx="10"/></clipPath>
+            <image href="photos/zip-tie-tied.jpg" x="1104" y="114" width="156" height="208" preserveAspectRatio="xMidYMid slice" clip-path="url(#phclip-tied)"/>
+            <g transform="translate(1244,130)">
+              <circle r="13" fill="#2F6B4F"/>
+              <circle cx="-1.5" cy="-1.5" r="4.6" fill="none" stroke="#FBFAF6" stroke-width="2"/>
+              <path d="M2,2 l4.5,4.5" stroke="#FBFAF6" stroke-width="2.4" stroke-linecap="round"/>
+            </g>
+            <text data-i18n="photo.tied" x="1182" y="344" font-size="12" font-weight="800" fill="#7C8C81" text-anchor="middle" letter-spacing="1.6">TIED TOGETHER</text>
+          </g>
+        </g>
+        <g class="pop photo" style="--d:10.6s" data-photo="zip-tie-released">
+          <g transform="rotate(2 1376 231)">
+            <g filter="url(#softsm)"><rect class="photo-frame" x="1290" y="106" width="172" height="250" rx="14" fill="#FBFAF6"/></g>
+            <clipPath id="phclip-released"><rect x="1298" y="114" width="156" height="208" rx="10"/></clipPath>
+            <image href="photos/zip-tie-released.jpg" x="1298" y="114" width="156" height="208" preserveAspectRatio="xMidYMid slice" clip-path="url(#phclip-released)"/>
+            <g transform="translate(1438,130)">
+              <circle r="13" fill="#2F6B4F"/>
+              <circle cx="-1.5" cy="-1.5" r="4.6" fill="none" stroke="#FBFAF6" stroke-width="2"/>
+              <path d="M2,2 l4.5,4.5" stroke="#FBFAF6" stroke-width="2.4" stroke-linecap="round"/>
+            </g>
+            <text data-i18n="photo.released" x="1376" y="344" font-size="12" font-weight="800" fill="#7C8C81" text-anchor="middle" letter-spacing="1.6">TIE RELEASED</text>
+          </g>
+        </g>
+        <!--/photos-->
       </g>
      </g>
 
@@ -2030,6 +2139,14 @@
   </svg>
 
   <div class="vignette"></div>
+  <!--photos-->
+  <div class="photobox" id="photobox" hidden>
+    <button type="button" class="photobox-close" id="photoboxClose" aria-label="Close">&times;</button>
+    <img id="photoboxImg" alt="">
+    <p class="photobox-cap" id="photoboxCap"></p>
+    <p class="photobox-hint" id="photoboxHint" data-i18n="photo.close">Tap anywhere to close</p>
+  </div>
+  <!--/photos-->
   <div class="cutflash" id="cutflash"></div>
   <div class="filmbar" aria-hidden="true"><i id="filmfill"></i></div>
 
@@ -2352,6 +2469,13 @@
       "s9.kicker":"DRIVER TRAINING",
       "s9.title":"That's a route, start to finish.",
       "s9.sub":"You're ready to go."
+      /*photos*/
+      ,"photo.door":"THE ROLL-UP DOOR",
+      "photo.rack":"YOUR RACK — ONE ROUTE",
+      "photo.tied":"TIED TOGETHER",
+      "photo.released":"TIE RELEASED",
+      "photo.close":"Tap anywhere to close"
+      /*/photos*/
     },
     es: {
       back:"ATRÁS", continue:"CONTINUAR", start:"EMPEZAR",
@@ -2441,6 +2565,13 @@
       "s9.kicker":"CAPACITACIÓN",
       "s9.title":"Así es una ruta, de principio a fin.",
       "s9.sub":"Ya estás listo."
+      /*photos*/
+      ,"photo.door":"LA PUERTA ENROLLABLE",
+      "photo.rack":"TU RACK — UNA RUTA",
+      "photo.tied":"ATADAS JUNTAS",
+      "photo.released":"CINCHO SUELTO",
+      "photo.close":"Toca en cualquier lugar para cerrar"
+      /*/photos*/
     }
   };
 
@@ -2798,6 +2929,10 @@
           void el.getBoundingClientRect();
         }
         el.classList.remove("is-warm");
+        if (LITE && !cold){
+          el.classList.remove("is-active");
+          void el.getBoundingClientRect();
+        }
         el.classList.add("is-active");
       } else if (el.classList.contains("is-active")){
         el.classList.add("is-leaving");
@@ -2918,6 +3053,40 @@
     if (picking){ startShow(); return; }
     next();
   });
+  /*photos*/
+  /* Tap a pinned photo to see it full-size. Scenes never auto-advance,
+     so the show simply waits underneath until the viewer closes it. */
+  const photobox = document.getElementById("photobox");
+  if (photobox){
+    const pbImg = document.getElementById("photoboxImg");
+    const pbCap = document.getElementById("photoboxCap");
+    function openPhoto(g){
+      const img = g.querySelector("image");
+      const capEl = g.querySelector("[data-i18n]");
+      if (!img) return;
+      pbImg.src = img.getAttribute("href");
+      pbCap.textContent = capEl ? capEl.textContent : "";
+      pbImg.alt = pbCap.textContent;
+      photobox.hidden = false;
+    }
+    function closePhoto(){
+      photobox.hidden = true;
+      pbImg.removeAttribute("src");
+    }
+    document.querySelectorAll(".photo").forEach(function(g){
+      g.setAttribute("role", "button");
+      g.setAttribute("tabindex", "0");
+      g.addEventListener("click", function(e){ e.stopPropagation(); openPhoto(g); });
+      g.addEventListener("keydown", function(e){
+        if (e.key === "Enter" || e.key === " "){ e.preventDefault(); e.stopPropagation(); openPhoto(g); }
+      });
+    });
+    photobox.addEventListener("click", closePhoto);
+    document.addEventListener("keydown", function(e){
+      if (!photobox.hidden && e.key === "Escape"){ e.stopPropagation(); closePhoto(); }
+    }, true);
+  }
+  /*/photos*/
 
   document.addEventListener("keydown", function(e){
     if (picking){

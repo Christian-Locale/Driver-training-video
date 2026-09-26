@@ -12,6 +12,7 @@ FILES = [
     ROOT / "locale-driver-training.html",
     ROOT / "site/index.html",
     ROOT / "locale-driver-training-vo.html",
+    ROOT / "locale-driver-training-photos-vo.html",
 ]
 
 
@@ -42,8 +43,8 @@ def check(html: str, name: str):
         errors.append("grain must be display:none on coarse/hover:none")
     if ".canvas" not in block or "animation:none" not in block:
         errors.append("handheld canvas animation must be none on coarse/hover:none")
-    if ".scene.is-active{animation:none" not in block:
-        errors.append("mobile scene handoff must disable sceneWhip (in-place fade)")
+    if ".scene.is-active{animation:sceneFadeIn" not in block:
+        errors.append("mobile scene handoff must use sceneFadeIn, not a CSS transition on SVG")
     if ".cutflash" not in block or "display:none" not in block:
         errors.append("cutflash must be display:none on mobile")
     if ".scene.is-warm" not in block:
@@ -54,6 +55,23 @@ def check(html: str, name: str):
         errors.append("show() must mark the next scene is-warm on LITE")
     if not re.search(r"if\s*\(\s*!LITE[\s\S]{0,80}cutflash", html):
         errors.append("cutflash must be skipped on LITE")
+    if "sceneFadeOut" not in squeezed:
+        errors.append("mobile outgoing scene must use sceneFadeOut")
+    if not re.search(
+        r"if\s*\(\s*!LITE\s*\)\s*el\.classList\.remove\(\s*[\"']is-active[\"']\s*\)",
+        html,
+    ):
+        errors.append("LITE must keep is-active on the outgoing scene during the fade")
+    show = re.search(r"function show\(i\)\{([\s\S]+?)\n  function ", html)
+    body = show.group(1) if show else ""
+    cam_at = body.find('setProperty("--camdur"')
+    loop_at = body.find("SCENES.forEach")
+    if cam_at < 0 or loop_at < 0 or cam_at > loop_at:
+        errors.append("--camdur must be set before the scene is activated")
+    if "animation:none!important" not in block or ".scene.is-active*" not in block:
+        errors.append("mobile must freeze entrance beats so dissolves are between complete frames")
+    if ".scene.is-active.cam" not in block or "scale(1.05)" not in block:
+        errors.append("mobile camera must hold a shared scale so the dissolve does not zoom")
     if errors:
         print(name + ":")
         for e in errors:

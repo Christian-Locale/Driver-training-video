@@ -15,9 +15,13 @@ Also useful:
     python3 narration.py models              # which TTS models you can use
     python3 narration.py speak --dry-run     # character count + credit estimate
     python3 narration.py speak --only s6,s7  # re-do just a couple of lines
-    python3 narration.py embed               # inline the audio into one HTML file
+    python3 narration.py embed               # build both shareable HTML files:
+                                             #   locale-driver-training-vo.html        (generic)
+                                             #   locale-driver-training-photos-vo.html (with warehouse photos)
 
-Script text and voice settings live in narration.json.
+Script text and voice settings live in narration.json. Real warehouse
+photos live in photos/ and are referenced from the source HTML inside
+<!--photos--> / /*photos*/ markers, which the generic build strips.
 """
 
 import argparse
@@ -36,6 +40,17 @@ CONFIG = ROOT / "narration.json"
 AUDIO_DIR = ROOT / "audio"
 SOURCE_HTML = ROOT / "locale-driver-training.html"
 EMBED_HTML = ROOT / "locale-driver-training-vo.html"
+PHOTO_EMBED_HTML = ROOT / "locale-driver-training-photos-vo.html"
+PHOTO_DIR = ROOT / "photos"
+
+# Everything between these markers in the source HTML is the "real
+# warehouse photos" layer. The generic build strips it out; the photo
+# build keeps it and inlines the JPEGs.
+PHOTO_BLOCKS = (
+    re.compile(r"[ \t]*<!--photos-->[\s\S]*?<!--/photos-->[ \t]*\n?"),
+    re.compile(r"[ \t]*/\*photos\*/[\s\S]*?/\*/photos\*/[ \t]*\n?"),
+)
+PHOTO_REF = re.compile(r'href="photos/([^"]+)"')
 
 
 def load_key():
@@ -335,12 +350,51 @@ def cmd_embed(args):
         sys.exit("Could not find the audio manifest marker in {}.".format(SOURCE_HTML.name))
 
     html = html.replace(marker, "window.__AUDIO__ = " + json.dumps(encoded) + ";", 1)
-    EMBED_HTML.write_text(html)
-
     nclips = sum(len(v) for v in encoded.values())
+
+    # Generic version: the illustrated film only, photo layer removed.
+    EMBED_HTML.write_text(strip_photos(html))
     print("Embedded {} clip(s) -> {} ({:.1f} MB)".format(
         nclips, EMBED_HTML.name, EMBED_HTML.stat().st_size / 1e6))
-    print("That file is fully self-contained — no audio/ folder needed.")
+
+    # Warehouse version: same film with the real photos pinned in.
+    photos, nphotos = inline_photos(html)
+    PHOTO_EMBED_HTML.write_text(photos)
+    print("Embedded {} clip(s) + {} photo(s) -> {} ({:.1f} MB)".format(
+        nclips, nphotos, PHOTO_EMBED_HTML.name, PHOTO_EMBED_HTML.stat().st_size / 1e6))
+    print("Both files are fully self-contained — no audio/ or photos/ folder needed.")
+
+
+def strip_photos(html):
+    """Remove the real-photo layer so the generic training is photo-free."""
+    for pattern in PHOTO_BLOCKS:
+        html = pattern.sub("", html)
+    if PHOTO_REF.search(html):
+        sys.exit("A photos/ reference sits outside the photo markers; wrap it in "
+                 "<!--photos--> ... <!--/photos--> so the generic build can drop it.")
+    return html
+
+
+def inline_photos(html):
+    """Swap every photos/*.jpg reference for a data URI. Returns (html, count)."""
+    missing = []
+    seen = set()
+
+    def encode(match):
+        name = match.group(1)
+        path = PHOTO_DIR / name
+        if not path.exists():
+            missing.append(name)
+            return match.group(0)
+        seen.add(name)
+        mime = "image/png" if path.suffix.lower() == ".png" else "image/jpeg"
+        data = base64.b64encode(path.read_bytes()).decode("ascii")
+        return 'href="data:{};base64,{}"'.format(mime, data)
+
+    html = PHOTO_REF.sub(encode, html)
+    if missing:
+        sys.exit("Missing photo(s) in {}/: {}".format(PHOTO_DIR.name, ", ".join(sorted(set(missing)))))
+    return html, len(seen)
 
 
 def main():
@@ -371,7 +425,7 @@ def main():
                        help="show character counts and cost, generate nothing")
     speak.set_defaults(func=cmd_speak)
 
-    sub.add_parser("embed", help="inline the audio into one self-contained HTML"
+    sub.add_parser("embed", help="build the generic and warehouse-photo HTML files"
                    ).set_defaults(func=cmd_embed)
 
     args = parser.parse_args()
